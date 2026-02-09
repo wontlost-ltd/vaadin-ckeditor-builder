@@ -1,0 +1,20 @@
+/* 去除搜索插件输入框的 focus 蓝色边框 */
+/* 针对 vaadin-input-container 组件的 shadow DOM */
+
+:host {
+    --_input-container-background: transparent;
+    --_focus-ring-color: transparent !important;
+    --vaadin-focus-ring-color: transparent !important;
+}
+
+:host::after {
+    box-shadow: none !important;
+}
+
+:host(:focus-within)::after {
+    box-shadow: none !important;
+}
+
+:host([focused])::after {
+    box-shadow: none !important;
+}

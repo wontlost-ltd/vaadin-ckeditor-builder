@@ -1,0 +1,2043 @@
+/* CKEditor Builder 应用主样式 - 现代简洁版 */
+
+/* ===== Vaadin Lumo 系统字体栈 ===== */
+/* 使用 Inter 字体 + 系统字体回退 */
+
+/* ===== Lumo Light Mode Variables ===== */
+:root {
+    /* 使用 Inter 字体，与 vaadin.com 风格保持一致 */
+    --lumo-font-family: "Inter", -apple-system, BlinkMacSystemFont, "Roboto", "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    --lumo-font-size-xxxl: 1.75rem;
+    --lumo-font-size-xxl: 1.375rem;
+    --lumo-font-size-xl: 1.125rem;
+    --lumo-font-size-l: 1rem;
+    --lumo-font-size-m: 0.875rem;
+    --lumo-font-size-s: 0.8125rem;
+    --lumo-font-size-xs: 0.75rem;
+    --lumo-font-size-xxs: 0.6875rem;
+    --lumo-line-height-m: 1.625;
+    --lumo-line-height-s: 1.375;
+    --lumo-line-height-xs: 1.25;
+
+    /* Lumo base variables for light mode */
+    --lumo-base-color: #ffffff;
+    --lumo-body-text-color: #1f2937;
+    --lumo-secondary-text-color: #4b5563;
+    --lumo-tertiary-text-color: #6b7280;
+    --lumo-primary-color: #2563eb;
+    --lumo-contrast-5pct: rgba(0, 0, 0, 0.05);
+    --lumo-contrast-10pct: rgba(0, 0, 0, 0.1);
+    --lumo-contrast-20pct: rgba(0, 0, 0, 0.2);
+    --lumo-contrast-50pct: rgba(0, 0, 0, 0.5);
+    --lumo-box-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --lumo-box-shadow-s: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== 全局变量 ===== */
+:root {
+    /* 品牌色 - 统一设计系统 */
+    --app-primary: #2563eb;
+    --app-primary-light: #60a5fa;
+    --app-primary-dark: #1d4ed8;
+    --app-secondary: #10b981;
+    --app-secondary-light: #34d399;
+    --app-secondary-dark: #059669;
+    --app-accent: #f59e0b;
+    --app-accent-light: #fbbf24;
+    --app-accent-dark: #d97706;
+
+    /* 文字颜色 */
+    --app-text-primary: #1f2937;
+    --app-text-secondary: #4b5563;
+    --app-text-muted: #6b7280;
+
+    /* 背景色 */
+    --app-bg-primary: #ffffff;
+    --app-bg-secondary: #f9fafb;
+    --app-bg-tertiary: #f3f4f6;
+    --app-border-color: #e5e7eb;
+
+    /* 渐变 */
+    --app-gradient-primary: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    --app-gradient-secondary: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    --app-gradient-accent: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    --app-gradient-premium: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+
+    /* 阴影 - 更柔和 */
+    --app-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --app-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --app-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --app-shadow-xl: 0 10px 25px rgba(0, 0, 0, 0.1);
+
+    /* 过渡 */
+    --app-transition-fast: 0.15s ease;
+    --app-transition-normal: 0.2s ease;
+    --app-transition-slow: 0.3s ease;
+
+    /* 圆角 */
+    --app-radius-xs: 4px;
+    --app-radius-sm: 6px;
+    --app-radius-md: 8px;
+    --app-radius-lg: 12px;
+    --app-radius-xl: 16px;
+
+    /* 字体 - 使用 Inter 字体 */
+    --app-font-family: var(--lumo-font-family, "Inter", -apple-system, BlinkMacSystemFont, "Roboto", "Segoe UI", Helvetica, Arial, sans-serif);
+    --app-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+
+    /* Panel header gradient */
+    --app-gradient-header: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+
+    /* 字体大小 - 响应式 */
+    --app-font-size-h1: clamp(22px, 1.3vw + 16px, 32px);
+    --app-font-size-h2: clamp(18px, 1vw + 14px, 26px);
+    --app-font-size-h3: clamp(16px, 0.8vw + 12px, 22px);
+    --app-font-size-h4: clamp(14px, 0.6vw + 11px, 18px);
+    --app-font-size-body: clamp(13px, 0.4vw + 11px, 16px);
+    --app-font-size-caption: clamp(11px, 0.3vw + 10px, 13px);
+    --app-font-size-code: clamp(11px, 0.3vw + 10px, 13px);
+
+    /* 间距 */
+    --app-space-xs: 4px;
+    --app-space-s: 8px;
+    --app-space-m: 12px;
+    --app-space-l: 16px;
+    --app-space-xl: 24px;
+    --app-space-xxl: 32px;
+
+    /* 组件尺寸 */
+    --app-navbar-height: 56px;
+    --app-input-height: 36px;
+    --app-touch-target: 44px;
+
+    /* 代码语法高亮 */
+    --app-code-keyword: #93c5fd;
+    --app-code-string: #fde68a;
+    --app-code-comment: #6b7280;
+    --app-code-number: #a5b4fc;
+    --app-code-function: #67e8f9;
+    --app-code-class: #c4b5fd;
+    --app-code-variable: #d4d4d4;
+    --app-code-operator: #f9a8d4;
+    --app-code-punctuation: #9ca3af;
+}
+
+/* ===== 基础重置 ===== */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    /* 使用 Inter 字体，与 vaadin.com 风格一致 */
+    font-family: var(--lumo-font-family, "Inter", -apple-system, BlinkMacSystemFont, "Roboto", "Segoe UI", Helvetica, Arial, sans-serif);
+    font-size: var(--lumo-font-size-m, 0.875rem);
+    line-height: var(--lumo-line-height-m, 1.625);
+    color: var(--lumo-body-text-color, #1f2937);
+    background: var(--app-bg-secondary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== 编辑器容器样式 ===== */
+/* Note: color is NOT set here to allow Addon theme to override App theme.
+ * Text color is controlled by CKEditor's default styles for light theme,
+ * and by sticky-toolbar.css for dark theme (respects data-ck-theme attribute). */
+.ck-editor__editable {
+    min-height: 280px;
+    font-family: var(--app-font-family) !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    box-sizing: border-box !important;
+}
+
+/* Apply App text color only when Addon theme is NOT explicitly set to light */
+vaadin-ckeditor:not([data-ck-theme="light"]) .ck-editor__editable {
+    color: var(--app-text-primary) !important;
+}
+
+.ck-editor__editable:focus {
+    box-shadow: 0 0 0 2px rgba(80, 70, 229, 0.2);
+}
+
+/* ===== CKEditor 工具栏美化 ===== */
+/* Note: background color is NOT set here to allow Addon theme to override App theme.
+ * The toolbar background is controlled by:
+ * - sticky-toolbar.css for dark theme (respects data-ck-theme attribute)
+ * - CKEditor's default CSS variables for light theme */
+.ck.ck-toolbar {
+    border-radius: var(--app-radius-md) var(--app-radius-md) 0 0 !important;
+    border-bottom: 1px solid var(--app-border-color) !important;
+    padding: var(--app-space-s) var(--app-space-m) !important;
+}
+
+/* Apply App background only when Addon theme is NOT explicitly set to light */
+vaadin-ckeditor:not([data-ck-theme="light"]) .ck.ck-toolbar {
+    background: var(--app-bg-primary) !important;
+}
+
+.ck.ck-toolbar .ck-toolbar__items {
+    gap: 2px;
+    flex-wrap: wrap;
+    row-gap: 4px;
+}
+
+.ck.ck-button {
+    border-radius: var(--app-radius-sm) !important;
+    transition: background var(--app-transition-fast) !important;
+}
+
+.ck.ck-button:hover {
+    background: rgba(80, 70, 229, 0.08) !important;
+}
+
+.ck.ck-button.ck-on {
+    background: var(--app-primary) !important;
+    color: white !important;
+}
+
+/* ===== 编辑区域样式 ===== */
+.ck.ck-content {
+    border-radius: 0 0 var(--app-radius-md) var(--app-radius-md) !important;
+    padding: var(--app-space-l) var(--app-space-xl) !important;
+    line-height: 1.6;
+}
+
+.ck.ck-editor__main {
+    border-radius: 0 0 var(--app-radius-md) var(--app-radius-md);
+}
+
+/* ===== SplitLayout 美化 ===== */
+vaadin-split-layout {
+    --vaadin-split-layout-splitter-size: 1px;
+}
+
+vaadin-split-layout::part(splitter) {
+    background: var(--app-border-color);
+}
+
+vaadin-split-layout::part(splitter):hover {
+    background: var(--app-primary-light);
+}
+
+vaadin-split-layout::part(handle) {
+    background: var(--app-border-color);
+    border-radius: 2px;
+    width: 3px;
+    height: 32px;
+}
+
+vaadin-split-layout[orientation="vertical"]::part(handle) {
+    width: 32px;
+    height: 3px;
+}
+
+vaadin-split-layout::part(splitter):hover::part(handle) {
+    background: var(--app-primary);
+}
+
+/* ===== 布局 ===== */
+.builder-view {
+    height: 100%;
+    background: var(--app-bg-secondary);
+}
+
+/* Hide Configuration panel header - tabs serve as the header now */
+.config-panel > .panel-header {
+    display: none !important;
+}
+
+/* Make vaadin-tabs match Preview panel header height (69px) */
+.config-panel > vaadin-tabs {
+    min-height: 69px !important;
+    height: 69px !important;
+    padding: 0 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    background: var(--app-gradient-header, linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)) !important;
+    border-bottom: 1px solid var(--app-border-color, #e2e8f0) !important;
+}
+
+[theme~="dark"] .config-panel > vaadin-tabs {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
+    border-bottom-color: #374151 !important;
+}
+
+/* ===== Details 组件美化 ===== */
+vaadin-details {
+    border: 1px solid var(--app-border-color) !important;
+    background: var(--app-bg-primary);
+    border-radius: var(--app-radius-md) !important;
+    margin-bottom: var(--app-space-s);
+    overflow: hidden;
+}
+
+vaadin-details[opened] {
+    border-color: var(--app-primary-light);
+}
+
+vaadin-details::part(summary) {
+    padding: var(--app-space-m);
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--app-text-primary);
+    background: var(--app-bg-primary);
+    border-bottom: 1px solid transparent;
+}
+
+vaadin-details[opened]::part(summary) {
+    border-bottom-color: var(--app-border-color);
+    background: var(--app-bg-secondary);
+}
+
+vaadin-details::part(summary):hover {
+    background: var(--app-bg-secondary);
+}
+
+vaadin-details::part(content) {
+    padding: var(--app-space-m);
+}
+
+vaadin-details::part(toggle) {
+    color: var(--app-text-secondary);
+}
+
+vaadin-details[opened]::part(toggle) {
+    color: var(--app-primary);
+}
+
+/* ===== Checkbox 美化 ===== */
+vaadin-checkbox {
+    display: flex;
+    align-items: center;
+    padding: var(--app-space-xs) 0;
+    margin: 1px 0;
+}
+
+vaadin-checkbox:hover {
+    background: transparent;
+}
+
+vaadin-checkbox::part(checkbox) {
+    border-radius: var(--app-radius-xs);
+    border-color: var(--app-border-color);
+}
+
+vaadin-checkbox[checked]::part(checkbox) {
+    background: var(--app-primary);
+    border-color: var(--app-primary);
+}
+
+vaadin-checkbox::part(label) {
+    font-size: 13px;
+    color: var(--app-text-primary);
+}
+
+/* ===== Tabs 美化 ===== */
+vaadin-tabs {
+    background: var(--app-bg-primary);
+    box-shadow: inset 0 -1px 0 var(--app-border-color);
+}
+
+vaadin-tab {
+    font-weight: 500;
+    font-size: 13px;
+    padding: var(--app-space-s) var(--app-space-m);
+    color: var(--app-text-secondary);
+}
+
+vaadin-tab:hover:not([selected]) {
+    color: var(--app-text-primary);
+}
+
+vaadin-tab[selected] {
+    color: var(--app-primary);
+}
+
+vaadin-tab::before {
+    display: none;
+}
+
+vaadin-tab[selected]::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--app-primary);
+}
+
+/* ===== Button 美化 ===== */
+vaadin-button {
+    border-radius: var(--app-radius-sm);
+    font-weight: 500;
+    font-size: 13px;
+    height: var(--app-input-height);
+}
+
+vaadin-button[theme~="primary"] {
+    background: var(--app-primary);
+    border: none;
+}
+
+vaadin-button[theme~="primary"]:hover {
+    background: var(--app-primary-dark);
+}
+
+vaadin-button[theme~="success"] {
+    background: #059669;
+}
+
+vaadin-button[theme~="error"] {
+    background: #dc2626;
+}
+
+/* ===== ComboBox 美化 ===== */
+vaadin-combo-box {
+    --vaadin-input-field-border-radius: var(--app-radius-sm);
+}
+
+vaadin-combo-box::part(input-field) {
+    border-radius: var(--app-radius-sm);
+    background: var(--app-bg-primary);
+    border: 1px solid var(--app-border-color);
+    min-height: var(--app-input-height);
+    font-size: 13px;
+}
+
+vaadin-combo-box::part(input-field):hover {
+    border-color: #d1d5db;
+}
+
+vaadin-combo-box::part(input-field):focus-within {
+    border-color: var(--app-primary);
+    box-shadow: 0 0 0 2px rgba(80, 70, 229, 0.15);
+}
+
+/* ===== 代码预览区域 ===== */
+.export-preview,
+.config-preview-code {
+    font-family: var(--app-font-mono);
+    font-size: var(--app-font-size-code);
+    line-height: 1.6;
+    background: linear-gradient(180deg, #1a1b26 0%, #24283b 100%);
+    color: var(--app-code-variable);
+    border-radius: var(--app-radius-lg);
+    padding: var(--app-space-l);
+    border: 1px solid #414868;
+    overflow-x: auto;
+}
+
+/* ===== 代码语法高亮 ===== */
+.code-keyword { color: var(--app-code-keyword); font-weight: 500; }
+.code-string { color: var(--app-code-string); }
+.code-comment { color: var(--app-code-comment); font-style: italic; }
+.code-number { color: var(--app-code-number); }
+.code-function { color: var(--app-code-function); }
+.code-class { color: var(--app-code-class); font-weight: 500; }
+.code-variable { color: var(--app-code-variable); }
+.code-operator { color: var(--app-code-operator); }
+.code-punctuation { color: var(--app-code-punctuation); }
+.code-annotation { color: var(--app-code-class); }
+
+/* ===== 面板标题样式 ===== */
+.panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--app-text-primary);
+    margin: 0;
+}
+
+/* ===== 配置面板卡片 ===== */
+.config-card {
+    background: var(--app-bg-primary);
+    border-radius: var(--app-radius-md);
+    padding: var(--app-space-m);
+    margin-bottom: var(--app-space-m);
+    border: 1px solid var(--app-border-color);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.config-card:hover {
+    border-color: #d1d5db;
+}
+
+/* ===== 预览面板 ===== */
+.preview-panel {
+    background: var(--app-bg-primary);
+}
+
+/* ===== 编辑器容器 ===== */
+.editor-container {
+    border: 1px solid var(--app-border-color);
+    border-radius: var(--app-radius-md);
+    overflow: visible;  /* CRITICAL: Allow sticky toolbar to work - do not use 'hidden' */
+    background: var(--app-bg-primary);
+}
+
+.editor-container:focus-within {
+    border-color: var(--app-primary);
+    box-shadow: 0 0 0 2px rgba(80, 70, 229, 0.1);
+}
+
+/* ===== 导出面板 ===== */
+.export-panel {
+    background: var(--app-bg-secondary);
+    border-top: 1px solid var(--app-border-color);
+}
+
+/* ===== Badge/标签样式 ===== */
+.premium-badge {
+    font-size: 10px;
+    font-weight: 600;
+    color: white;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 6px rgba(245, 87, 108, 0.4);
+}
+
+.category-badge {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--lumo-primary-color);
+    background: var(--lumo-primary-color-10pct);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+/* ===== 统计信息卡片 ===== */
+.stats-card {
+    display: flex;
+    align-items: center;
+    gap: var(--lumo-space-m);
+    padding: var(--app-card-padding);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    border-radius: var(--app-radius-md);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.stats-number {
+    font-size: var(--lumo-font-size-xxl);
+    font-weight: 700;
+    background: var(--app-primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stats-label {
+    font-size: var(--lumo-font-size-s);
+    color: var(--lumo-secondary-text-color);
+}
+
+/* ===== 触控目标 ===== */
+.touch-target {
+    min-height: var(--app-touch-target);
+}
+
+/* ===== 5档响应式断点体系 ===== */
+
+/* 超宽桌面 ≥1400px */
+@media (min-width: 1400px) {
+    :root {
+        --app-font-base: clamp(15px, 0.5vw + 12px, 18px);
+        --app-space-l: clamp(22px, 1.6vw + 14px, 34px);
+        --app-card-radius: clamp(12px, 0.8vw + 8px, 18px);
+    }
+
+    .config-card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* 桌面 ≥1200px */
+@media (min-width: 1200px) {
+    :root {
+        --app-font-base: clamp(15px, 0.6vw + 11px, 17px);
+        --app-space-m: clamp(14px, 1vw + 10px, 22px);
+        --app-space-xl: clamp(24px, 2vw + 14px, 38px);
+    }
+}
+
+/* 小桌面/横屏平板 ≥992px */
+@media (min-width: 992px) {
+    :root {
+        --app-font-base: clamp(14px, 0.6vw + 11px, 16px);
+        --app-space-l: clamp(18px, 1.4vw + 12px, 28px);
+    }
+
+    .config-card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* 竖屏平板 ≥768px */
+@media (min-width: 768px) {
+    :root {
+        --app-font-base: clamp(14px, 0.7vw + 10px, 16px);
+        --app-panel-padding: var(--app-space-l);
+    }
+}
+
+/* 小桌面以下 <992px */
+@media (max-width: 991px) {
+    .ck-editor__editable {
+        min-height: 220px;
+    }
+
+    .config-card {
+        padding: var(--app-card-padding);
+    }
+
+    vaadin-tab {
+        padding: var(--app-space-xs) var(--app-space-s);
+        font-size: var(--lumo-font-size-s);
+    }
+
+    .config-card-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* 平板以下 <768px */
+@media (max-width: 767px) {
+    .preview-panel-header,
+    .export-panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--app-space-s);
+    }
+
+    .ck.ck-toolbar {
+        padding: var(--app-space-s) var(--app-space-s) !important;
+    }
+}
+
+/* 手机 ≤600px */
+@media (max-width: 600px) {
+    :root {
+        --app-font-base: 14px;
+        --app-panel-padding: var(--app-space-m);
+        --app-card-padding: var(--app-space-s);
+        --app-card-gap: var(--app-space-s);
+        --app-splitter-size: 12px;
+        --app-splitter-handle-size: 34px;
+        --app-navbar-height: 56px;
+    }
+
+    .ck-editor__editable {
+        min-height: 180px;
+    }
+
+    .export-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .export-buttons > * {
+        width: 100%;
+    }
+
+    .preview-panel-header {
+        flex-direction: column;
+        gap: var(--app-space-s);
+    }
+
+    .ck.ck-toolbar .ck-toolbar__items {
+        gap: 2px;
+        row-gap: 4px;
+    }
+
+    /* 导航栏响应式 - 隐藏桌面链接，显示汉堡菜单 */
+    .app-header .nav-links {
+        display: none !important;
+    }
+
+    .app-header .nav-menu-button {
+        display: inline-flex !important;
+    }
+
+    .app-header .app-name {
+        font-size: 1rem;
+    }
+
+    .app-header .version-badge {
+        display: none;
+    }
+
+    /* 移动端布局选项卡 */
+    .mobile-tabs vaadin-tab {
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* BuilderView 移动端模式 */
+    .builder-mobile .config-panel {
+        border-right: none;
+    }
+}
+
+/* 平板竖屏 600-768px */
+@media (min-width: 601px) and (max-width: 768px) {
+    .app-header .nav-links {
+        display: flex !important;
+    }
+
+    .app-header .nav-menu-button {
+        display: none !important;
+    }
+}
+
+/* ===== 触控设备优化 ===== */
+@media (pointer: coarse) {
+    :root {
+        --app-splitter-size: 14px;
+        --app-splitter-handle-size: 36px;
+    }
+
+    vaadin-button,
+    vaadin-tab,
+    vaadin-combo-box,
+    vaadin-checkbox,
+    vaadin-details::part(summary) {
+        min-height: var(--app-touch-target);
+    }
+
+    .ck.ck-button {
+        min-height: var(--app-touch-target) !important;
+        min-width: var(--app-touch-target) !important;
+    }
+
+    vaadin-checkbox {
+        padding: var(--app-space-s) var(--app-space-m);
+    }
+}
+
+/* ===== 减少动画偏好 ===== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .loading-shimmer,
+    .pulse,
+    .fade-in {
+        animation: none !important;
+    }
+}
+
+/* ===== 滚动条美化 ===== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--lumo-contrast-20pct) 0%, var(--lumo-contrast-30pct) 100%);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--lumo-contrast-30pct) 0%, var(--lumo-contrast-40pct) 100%);
+    background-clip: padding-box;
+}
+
+/* Firefox 滚动条 */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--lumo-contrast-30pct) transparent;
+}
+
+/* ===== 加载动画 ===== */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.loading-shimmer {
+    background: linear-gradient(
+        90deg,
+        var(--lumo-shade-5pct) 25%,
+        var(--lumo-shade-10pct) 50%,
+        var(--lumo-shade-5pct) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--app-radius-sm);
+}
+
+/* ===== 淡入动画 ===== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+/* ===== 脉冲动画 ===== */
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(102, 126, 234, 0);
+    }
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* ===== 工具提示样式 ===== */
+vaadin-tooltip::part(overlay) {
+    background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+    color: white;
+    border-radius: var(--app-radius-sm);
+    box-shadow: var(--app-shadow-lg);
+    font-size: var(--lumo-font-size-s);
+    padding: var(--lumo-space-xs) var(--lumo-space-s);
+}
+
+/* ===== Dialog 美化 ===== */
+vaadin-dialog-overlay::part(overlay) {
+    border-radius: var(--app-radius-xl);
+    box-shadow: var(--app-shadow-xl);
+    overflow: hidden;
+}
+
+vaadin-dialog-overlay::part(header) {
+    background: linear-gradient(180deg, var(--lumo-shade-5pct) 0%, transparent 100%);
+    padding: var(--lumo-space-m) var(--lumo-space-l);
+    border-bottom: 1px solid var(--lumo-contrast-10pct);
+}
+
+vaadin-dialog-overlay::part(footer) {
+    background: var(--lumo-shade-5pct);
+    padding: var(--lumo-space-m) var(--lumo-space-l);
+    border-top: 1px solid var(--lumo-contrast-10pct);
+}
+
+/* ===== Notification 美化 ===== */
+vaadin-notification-card {
+    border-radius: var(--app-radius-md);
+    box-shadow: var(--app-shadow-lg);
+}
+
+vaadin-notification-card[theme~="success"] {
+    background: #059669 !important;
+    color: white !important;
+}
+
+vaadin-notification-card[theme~="error"] {
+    background: #dc2626 !important;
+    color: white !important;
+}
+
+/* ===== 主题切换器样式 ===== */
+.theme-switcher {
+    margin: 0 4px;
+}
+
+.theme-button {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    padding: 8px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    border-radius: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+}
+
+.theme-button:hover {
+    background: var(--lumo-contrast-5pct, rgba(0, 0, 0, 0.05)) !important;
+}
+
+.theme-button:active {
+    background: var(--lumo-contrast-10pct, rgba(0, 0, 0, 0.1)) !important;
+    transform: scale(0.95);
+}
+
+.theme-button vaadin-icon,
+.theme-button iron-icon {
+    color: var(--app-text-muted, #6b7280) !important;
+    transition: color 0.2s ease !important;
+}
+
+.theme-button:hover vaadin-icon,
+.theme-button:hover iron-icon {
+    color: var(--app-text-primary, #1f2937) !important;
+}
+
+/* Dark mode styles for theme button */
+[theme~="dark"] .theme-button:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+[theme~="dark"] .theme-button vaadin-icon,
+[theme~="dark"] .theme-button iron-icon {
+    color: #9ca3af !important;
+}
+
+[theme~="dark"] .theme-button:hover vaadin-icon,
+[theme~="dark"] .theme-button:hover iron-icon {
+    color: #f3f4f6 !important;
+}
+
+/* ===== 语言切换器样式 ===== */
+/* 语言代码按钮样式 - 无边框 */
+.language-code-button {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    padding: 4px 8px !important;
+    min-width: auto !important;
+}
+
+.language-code-button:hover {
+    background: var(--lumo-contrast-5pct) !important;
+    border-radius: 4px !important;
+}
+
+.language-code-button:focus {
+    box-shadow: none !important;
+}
+
+.language-code-button::part(label) {
+    padding: 0 !important;
+}
+
+/* 注意: checkmark 隐藏样式在 themes/ckeditor-builder/components/vaadin-context-menu-item.css 中定义 */
+/* 该文件会被注入到 shadow DOM 中，从而正确隐藏 checkmark */
+
+/* ===== 选择高亮 ===== */
+::selection {
+    background: rgba(102, 126, 234, 0.3);
+    color: inherit;
+}
+
+::-moz-selection {
+    background: rgba(102, 126, 234, 0.3);
+    color: inherit;
+}
+
+/* ===== 焦点样式统一 ===== */
+/* 注释掉全局焦点样式，避免与Vaadin组件的焦点样式冲突 */
+/*
+*:focus-visible {
+    outline: 2px solid var(--lumo-primary-color);
+    outline-offset: 2px;
+}
+*/
+
+/* ===== 描述文字样式 ===== */
+.description-text {
+    font-size: var(--lumo-font-size-s);
+    color: var(--lumo-secondary-text-color);
+    line-height: 1.5;
+    margin-top: var(--lumo-space-xs);
+}
+
+/* ===== 分隔线 ===== */
+.divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--lumo-contrast-10pct) 50%, transparent 100%);
+    margin: var(--lumo-space-m) 0;
+}
+
+/* ===== 快捷操作按钮组 ===== */
+.quick-actions {
+    display: flex;
+    gap: var(--lumo-space-xs);
+    padding: var(--lumo-space-s);
+    background: var(--lumo-shade-5pct);
+    border-radius: var(--app-radius-md);
+    margin-top: var(--lumo-space-m);
+    flex-wrap: wrap;
+}
+
+.quick-actions vaadin-button {
+    flex: 1;
+    min-width: 80px;
+}
+
+@media (max-width: 600px) {
+    .quick-actions {
+        flex-direction: column;
+    }
+
+    .quick-actions vaadin-button {
+        width: 100%;
+    }
+}
+
+/* ===== 粘性应用按钮栏 ===== */
+.sticky-apply-bar {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, var(--app-bg-primary) 20%);
+    padding: var(--app-space-l) var(--app-space-m);
+    z-index: 100;
+    border-top: 1px solid var(--app-border-color);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.sticky-apply-bar .apply-button {
+    width: 100%;
+    height: var(--app-touch-target);
+    font-weight: 600;
+    font-size: var(--app-font-size-body);
+    background: var(--app-gradient-primary);
+    border: none;
+    border-radius: var(--app-radius-md);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    transition: all var(--app-transition-normal);
+}
+
+.sticky-apply-bar .apply-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+}
+
+.sticky-apply-bar .apply-button:active {
+    transform: translateY(0);
+}
+
+/* 未保存更改徽章 */
+.unsaved-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--app-space-xs);
+    font-size: var(--app-font-size-caption);
+    color: var(--app-accent);
+    background: rgba(245, 158, 11, 0.1);
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: var(--app-space-s);
+}
+
+.unsaved-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--app-accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+/* ===== 插件搜索和筛选 ===== */
+.plugin-search-bar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-space-s);
+    padding: 16px;
+    background: var(--app-bg-primary);
+    border-radius: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--app-border-color);
+}
+
+.plugin-search-input {
+    width: 100%;
+    --vaadin-input-field-background: var(--app-bg-tertiary);
+}
+
+.plugin-search-input::part(input-field) {
+    border-radius: var(--app-radius-md);
+    background: var(--app-bg-tertiary);
+    border: 1px solid var(--app-border-color);
+}
+
+.plugin-search-input::part(input-field):focus-within {
+    border-color: var(--app-primary);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.plugin-filter-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    background: var(--app-bg-tertiary);
+    border-radius: 10px;
+    padding: 4px;
+}
+
+.plugin-filter-button {
+    flex: 1;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    min-height: 36px;
+    border: none;
+    background: transparent;
+    color: var(--app-text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.plugin-filter-button:hover {
+    color: var(--app-text-primary);
+}
+
+.plugin-filter-button.active {
+    background: var(--app-bg-primary);
+    color: var(--app-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== Quick Actions Card ===== */
+.quick-actions-card {
+    background: var(--app-bg-primary);
+    border-radius: 16px;
+    padding: 12px;
+    margin-top: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--app-border-color);
+}
+
+/* ===== Toolbar Preview Card ===== */
+.toolbar-preview-card {
+    background: var(--app-bg-primary);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--app-border-color);
+}
+
+/* ===== 导出面板语言选项卡 ===== */
+.export-lang-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--app-bg-tertiary);
+    border-radius: 10px;
+    padding: 4px;
+}
+
+.export-lang-tab {
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: transparent;
+    color: var(--app-text-muted);
+}
+
+.export-lang-tab:hover {
+    color: var(--app-text-primary);
+}
+
+.export-lang-tab.active {
+    background: var(--app-bg-primary);
+    color: var(--app-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== 配置卡片改进 ===== */
+.config-card {
+    background: var(--app-bg-primary);
+    border-radius: var(--app-radius-lg);
+    padding: var(--app-space-l);
+    margin-bottom: var(--app-space-m);
+    border: 1px solid var(--app-border-color);
+    transition: all var(--app-transition-normal);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.config-card:hover {
+    border-color: var(--app-primary-light);
+    box-shadow: var(--app-shadow-md);
+}
+
+.config-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--app-space-s);
+    margin-bottom: var(--app-space-s);
+}
+
+.config-card-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--app-radius-md);
+    background: var(--app-gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    opacity: 0.9;
+}
+
+.config-card-title {
+    font-weight: 600;
+    font-size: var(--app-font-size-body);
+    color: var(--app-text-primary);
+}
+
+.config-card-description {
+    font-size: var(--app-font-size-caption);
+    color: var(--app-text-muted);
+    margin-bottom: var(--app-space-s);
+}
+
+/* ===== Vaadin Dark Mode Styles ===== */
+/* Auto-sync with Vaadin Lumo dark theme */
+[theme~="dark"] {
+    /* Override app variables for dark mode */
+    --app-text-primary: #f3f4f6;
+    --app-text-secondary: #d1d5db;
+    --app-text-muted: #9ca3af;
+    --app-bg-primary: #1f2937;
+    --app-bg-secondary: #111827;
+    --app-bg-tertiary: #374151;
+    --app-border-color: #374151;
+
+    /* Custom properties for wrapper backgrounds */
+    --editor-wrapper-bg: #111827;
+    --code-preview-wrapper-bg: #111827;
+
+    /* Gradient overrides for dark mode */
+    --app-gradient-header: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+
+    /* Lumo variables for Vaadin components - these penetrate shadow DOM */
+    --lumo-base-color: #1f2937;
+    --lumo-body-text-color: #f3f4f6;
+    --lumo-secondary-text-color: #d1d5db;
+    --lumo-tertiary-text-color: #9ca3af;
+    --lumo-contrast-5pct: rgba(255, 255, 255, 0.05);
+    --lumo-contrast-10pct: rgba(255, 255, 255, 0.1);
+    --lumo-contrast-20pct: rgba(255, 255, 255, 0.2);
+    --lumo-contrast-50pct: rgba(255, 255, 255, 0.5);
+
+    /* Vaadin input field variables */
+    --vaadin-input-field-background: #374151;
+    --vaadin-input-field-border-color: #4b5563;
+
+    /* Vaadin button variables */
+    --vaadin-button-background: transparent;
+}
+
+/* ===== AppLayout / Header 基础样式 ===== */
+vaadin-app-layout::part(navbar) {
+    background: var(--app-bg-primary, #ffffff) !important;
+    border-bottom: 1px solid var(--app-border-color, #e5e7eb) !important;
+    box-shadow: none !important;
+}
+
+/* App header 容器样式 */
+.app-header {
+    background: transparent !important;
+    height: var(--app-navbar-height, 56px);
+}
+
+/* 品牌区域样式 */
+.brand-section {
+    gap: 10px !important;
+}
+
+.brand-section vaadin-icon,
+.brand-section iron-icon {
+    color: var(--app-primary, #2563eb) !important;
+}
+
+/* 应用名称样式 */
+.app-name {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: var(--app-text-primary, #1f2937) !important;
+    margin: 0 !important;
+    letter-spacing: -0.01em;
+}
+
+/* 版本标签样式 */
+.version-badge {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: var(--app-text-muted, #6b7280) !important;
+    background: var(--app-bg-tertiary, #f3f4f6) !important;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+}
+
+/* ===== 导航链接样式 ===== */
+.nav-link {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+
+.nav-link:hover {
+    background: var(--lumo-contrast-5pct, rgba(0, 0, 0, 0.05)) !important;
+}
+
+.nav-link:active {
+    background: var(--lumo-contrast-10pct, rgba(0, 0, 0, 0.1)) !important;
+    transform: scale(0.95);
+}
+
+.nav-link vaadin-icon,
+.nav-link iron-icon,
+.nav-link svg {
+    color: var(--app-text-muted, #6b7280) !important;
+    transition: color 0.2s ease !important;
+}
+
+.nav-link:hover vaadin-icon,
+.nav-link:hover iron-icon,
+.nav-link:hover svg {
+    color: var(--app-text-primary, #1f2937) !important;
+}
+
+/* GitHub 图标特殊样式 */
+.nav-link.github-link svg {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+/* ===== AppLayout / Header Dark Mode ===== */
+[theme~="dark"] vaadin-app-layout::part(navbar) {
+    background: #111827 !important;
+    border-bottom: 1px solid #374151 !important;
+}
+
+/* App header in dark mode */
+[theme~="dark"] .app-header {
+    background: transparent !important;
+}
+
+/* App name text in dark mode */
+[theme~="dark"] .app-name {
+    color: #f3f4f6 !important;
+}
+
+/* Version badge in dark mode */
+[theme~="dark"] .version-badge {
+    color: #9ca3af !important;
+    background: #374151 !important;
+}
+
+/* Nav link icons in dark mode */
+[theme~="dark"] .nav-link vaadin-icon,
+[theme~="dark"] .nav-link iron-icon,
+[theme~="dark"] .nav-link svg {
+    color: #9ca3af !important;
+}
+
+[theme~="dark"] .nav-link:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+[theme~="dark"] .nav-link:hover vaadin-icon,
+[theme~="dark"] .nav-link:hover iron-icon,
+[theme~="dark"] .nav-link:hover svg {
+    color: #f3f4f6 !important;
+}
+
+/* CKEditor container in dark mode */
+/* App-specific container dark mode styles */
+[theme~="dark"] .editor-container {
+    background: var(--app-bg-primary);
+    border-color: var(--app-border-color);
+}
+
+/* Config cards in dark mode */
+[theme~="dark"] .config-card {
+    background: var(--app-bg-primary);
+    border-color: var(--app-border-color);
+}
+
+[theme~="dark"] .config-card:hover {
+    border-color: var(--app-primary-light);
+}
+
+/* Preview panel in dark mode */
+[theme~="dark"] .preview-panel {
+    background: var(--app-bg-secondary);
+}
+
+/* Export panel in dark mode */
+[theme~="dark"] .export-panel {
+    background: var(--app-bg-secondary);
+    border-top-color: var(--app-border-color);
+}
+
+/* Sticky apply bar in dark mode */
+[theme~="dark"] .sticky-apply-bar {
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0) 0%, var(--app-bg-primary) 20%);
+    border-top-color: var(--app-border-color);
+}
+
+/* Vaadin components in dark mode */
+[theme~="dark"] vaadin-tabs {
+    background: var(--app-bg-primary);
+    box-shadow: inset 0 -1px 0 var(--app-border-color);
+}
+
+[theme~="dark"] vaadin-tab {
+    color: var(--app-text-secondary);
+}
+
+[theme~="dark"] vaadin-tab:hover:not([selected]) {
+    color: var(--app-text-primary);
+}
+
+[theme~="dark"] vaadin-details {
+    background: var(--app-bg-primary);
+    border-color: var(--app-border-color) !important;
+}
+
+[theme~="dark"] vaadin-details::part(summary) {
+    background: var(--app-bg-primary);
+    color: var(--app-text-primary);
+}
+
+[theme~="dark"] vaadin-details[opened]::part(summary) {
+    background: var(--app-bg-tertiary);
+    border-bottom-color: var(--app-border-color);
+}
+
+[theme~="dark"] vaadin-combo-box::part(input-field) {
+    background: var(--app-bg-tertiary);
+    border-color: var(--app-border-color);
+    color: var(--app-text-primary);
+}
+
+[theme~="dark"] vaadin-checkbox::part(label) {
+    color: var(--app-text-primary);
+}
+
+/* Editor wrapper in dark mode - force override inline styles */
+[theme~="dark"] .editor-wrapper {
+    background: #111827 !important;
+}
+
+/* Code preview wrapper in dark mode - force override inline styles */
+[theme~="dark"] .code-preview-wrapper {
+    background: #111827 !important;
+}
+
+/* Override hardcoded inline backgrounds in dark mode */
+[theme~="dark"] .preview-panel,
+[theme~="dark"] .export-panel {
+    background: #111827 !important;
+}
+
+/* Preview panel header */
+[theme~="dark"] .preview-panel > div:first-child {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
+    border-bottom-color: #374151 !important;
+}
+
+/* Export panel header */
+[theme~="dark"] .export-panel > div:first-child {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
+    border-bottom-color: #374151 !important;
+    border-top-color: #374151 !important;
+}
+
+/* Editor container border in dark mode */
+[theme~="dark"] .editor-container {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+/* ===== Config Panel Dark Mode ===== */
+/* Config panel itself */
+[theme~="dark"] .config-panel {
+    background: #111827 !important;
+    border-right-color: #374151 !important;
+}
+
+/* Config panel header - override hardcoded inline styles */
+[theme~="dark"] .config-panel > div:first-child {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
+    border-bottom-color: #374151 !important;
+}
+
+/* Panel titles (h3) in dark mode */
+[theme~="dark"] .config-panel h3,
+[theme~="dark"] .preview-panel h3,
+[theme~="dark"] .export-panel h3 {
+    color: #f3f4f6 !important;
+}
+
+/* Config card title and description */
+[theme~="dark"] .config-card-title {
+    color: #f3f4f6 !important;
+}
+
+[theme~="dark"] .config-card-description {
+    color: #9ca3af !important;
+}
+
+/* Builder view background */
+[theme~="dark"] .builder-view {
+    background: #111827 !important;
+}
+
+/* Body background in dark mode */
+[theme~="dark"] body {
+    background: #111827 !important;
+}
+
+/* Main split layout backgrounds */
+[theme~="dark"] vaadin-split-layout {
+    background: #111827 !important;
+}
+
+[theme~="dark"] vaadin-split-layout::part(splitter) {
+    background: #374151 !important;
+}
+
+/* Scroller background */
+[theme~="dark"] vaadin-scroller {
+    background: #111827 !important;
+}
+
+/* ===== Width Fix for Preview and Export Sections ===== */
+.editor-wrapper,
+.code-preview-wrapper {
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+.editor-container,
+.config-preview-code {
+    box-sizing: border-box;
+    max-width: 100%;
+    width: 100%;
+}
+
+/* ===== CKEditor Theme Transition Fix ===== */
+/* Force CKEditor to use CSS-driven theme without relying on JavaScript repaint */
+
+/* Animation keyframes to force repaint on theme change */
+@keyframes ck-theme-repaint {
+    from { opacity: 0.999; }
+    to { opacity: 1; }
+}
+
+/* ===== CKEditor Theme Transitions ===== */
+/* Smooth transitions when switching themes */
+.ck.ck-toolbar {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.ck.ck-editor__editable {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ===== CKEditor Sticky Toolbar Configuration ===== */
+/* The sticky toolbar functionality is now built into vaadin-ckeditor component.
+ * This section only configures the offset to account for scroll container padding. */
+
+/* Set the sticky toolbar offset to compensate for editor-wrapper padding (20px) */
+.editor-wrapper {
+    --ck-sticky-toolbar-offset: -20px;
+}
+
+/* ===== Dark Mode: Configuration Tabs ===== */
+[theme~="dark"] vaadin-tabs {
+    background: #1f2937 !important;
+    box-shadow: inset 0 -1px 0 #374151 !important;
+}
+
+[theme~="dark"] vaadin-tab {
+    color: #9ca3af !important;
+}
+
+[theme~="dark"] vaadin-tab:hover:not([selected]) {
+    color: #f3f4f6 !important;
+}
+
+[theme~="dark"] vaadin-tab[selected] {
+    color: #60a5fa !important;
+}
+
+/* ===== Dark Mode: Plugin Search Bar ===== */
+[theme~="dark"] .plugin-search-bar {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+    box-shadow: none !important;
+}
+
+[theme~="dark"] .plugin-search-bar vaadin-text-field::part(input-field) {
+    background: #374151 !important;
+    color: #f3f4f6 !important;
+    border-color: #4b5563 !important;
+}
+
+/* ===== Dark Mode: Plugin Filter Buttons ===== */
+[theme~="dark"] .plugin-filter-buttons {
+    background: #374151 !important;
+}
+
+[theme~="dark"] .plugin-filter-button {
+    color: #9ca3af !important;
+    background: transparent !important;
+}
+
+[theme~="dark"] .plugin-filter-button.active {
+    background: #1f2937 !important;
+    color: #60a5fa !important;
+}
+
+/* Force all filter buttons in dark mode */
+[theme~="dark"] .plugin-filter-buttons vaadin-button {
+    background: transparent !important;
+    color: #9ca3af !important;
+}
+
+[theme~="dark"] .plugin-filter-buttons vaadin-button.active {
+    background: #1f2937 !important;
+    color: #60a5fa !important;
+}
+
+/* ===== Dark Mode: Quick Actions Card ===== */
+[theme~="dark"] .config-panel .quick-actions,
+[theme~="dark"] .config-panel > vaadin-scroller > div > div > div:last-child {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+/* ===== Dark Mode: Toolbar Preview Card ===== */
+[theme~="dark"] .config-panel h4 {
+    color: #f3f4f6 !important;
+}
+
+/* ===== Dark Mode: Export Language Tabs ===== */
+[theme~="dark"] .export-lang-tabs {
+    background: #374151 !important;
+}
+
+[theme~="dark"] .export-lang-tab {
+    color: #9ca3af !important;
+    background: transparent !important;
+}
+
+[theme~="dark"] .export-lang-tab.active {
+    background: #1f2937 !important;
+    color: #60a5fa !important;
+}
+
+/* Force all export lang tabs in dark mode */
+[theme~="dark"] .export-lang-tabs vaadin-button {
+    background: transparent !important;
+    color: #9ca3af !important;
+}
+
+[theme~="dark"] .export-lang-tabs vaadin-button.active {
+    background: #1f2937 !important;
+    color: #60a5fa !important;
+}
+
+/* ===== Dark Mode: Text Field / Input ===== */
+[theme~="dark"] vaadin-text-field::part(input-field) {
+    background: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #f3f4f6 !important;
+}
+
+[theme~="dark"] vaadin-text-field::part(input-field)::placeholder {
+    color: #9ca3af !important;
+}
+
+/* ===== Dark Mode: Refresh Button ===== */
+[theme~="dark"] .preview-panel button[theme~="small"] {
+    background: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #d1d5db !important;
+}
+
+/* ===== Dark Mode: Reset Button in Quick Actions ===== */
+[theme~="dark"] vaadin-button[theme~="small"]:not([theme~="primary"]):not([style*="linear-gradient"]) {
+    background: #374151 !important;
+    color: #d1d5db !important;
+}
+
+/* ===== Dark Mode: Quick Actions Card ===== */
+[theme~="dark"] .quick-actions-card {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+/* ===== Dark Mode: Toolbar Preview Card ===== */
+[theme~="dark"] .toolbar-preview-card {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+/* ===== Dark Mode: Reset Button ===== */
+[theme~="dark"] .reset-button {
+    background: #374151 !important;
+    color: #d1d5db !important;
+}
+
+/* ===== Dark Mode: Vaadin Details (Plugin Categories) ===== */
+[theme~="dark"] vaadin-details {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+[theme~="dark"] vaadin-details::part(summary) {
+    background: #1f2937 !important;
+    color: #f3f4f6 !important;
+}
+
+[theme~="dark"] vaadin-details::part(summary):hover {
+    background: #374151 !important;
+}
+
+[theme~="dark"] vaadin-details[opened]::part(summary) {
+    background: #374151 !important;
+    border-bottom-color: #4b5563 !important;
+}
+
+[theme~="dark"] vaadin-details::part(content) {
+    background: #1f2937 !important;
+}
+
+[theme~="dark"] vaadin-details::part(toggle) {
+    color: #9ca3af !important;
+}
+
+[theme~="dark"] vaadin-details[opened]::part(toggle) {
+    color: #60a5fa !important;
+}
+
+/* ===== Dark Mode: Checkbox Labels ===== */
+[theme~="dark"] vaadin-checkbox::part(label) {
+    color: #f3f4f6 !important;
+}
+
+/* Target the actual label element in light DOM that's slotted into the checkbox */
+[theme~="dark"] vaadin-checkbox label[slot="label"],
+[theme~="dark"] vaadin-checkbox label {
+    color: #f3f4f6 !important;
+}
+
+[theme~="dark"] vaadin-checkbox::part(checkbox) {
+    border-color: #4b5563 !important;
+}
+
+[theme~="dark"] vaadin-checkbox[checked]::part(checkbox) {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+}
+
+/* ===== Dark Mode: Override ALL inline white/light backgrounds ===== */
+/* These target specific elements with inline styles that need overriding */
+
+/* Search bar container in plugins tab */
+[theme~="dark"] .config-panel .plugin-search-bar,
+[theme~="dark"] .plugin-search-bar[style*="white"],
+[theme~="dark"] .plugin-search-bar[style*="#fff"],
+[theme~="dark"] div[style*="background: white"][style*="border-radius: 16px"] {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+    box-shadow: none !important;
+}
+
+/* Filter buttons container */
+[theme~="dark"] .plugin-filter-buttons[style*="#f3f4f6"],
+[theme~="dark"] div[style*="background: #f3f4f6"][style*="border-radius: 10px"],
+[theme~="dark"] div[style*="background: rgb(243, 244, 246)"] {
+    background: #374151 !important;
+}
+
+/* Quick actions card */
+[theme~="dark"] .quick-actions-card[style*="white"],
+[theme~="dark"] div[style*="background: white"][style*="margin-top: 16px"] {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+/* Toolbar preview card */
+[theme~="dark"] .toolbar-preview-card[style*="white"],
+[theme~="dark"] div[style*="background: white"][style*="padding: 20px"] {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+/* Export lang tabs container */
+[theme~="dark"] .export-lang-tabs[style*="#f1f5f9"],
+[theme~="dark"] div[style*="background: #f1f5f9"],
+[theme~="dark"] div[style*="background: rgb(241, 245, 249)"] {
+    background: #374151 !important;
+}
+
+/* Active buttons with white background in dark mode */
+[theme~="dark"] button[style*="background: white"],
+[theme~="dark"] vaadin-button[style*="background: white"],
+[theme~="dark"] .active[style*="background: white"] {
+    background: #1f2937 !important;
+    color: #60a5fa !important;
+}
+
+/* Inactive buttons with transparent background */
+[theme~="dark"] button[style*="background: transparent"],
+[theme~="dark"] vaadin-button[style*="background: transparent"] {
+    color: #9ca3af !important;
+}
+
+/* Text field input in dark mode */
+[theme~="dark"] vaadin-text-field {
+    --vaadin-input-field-background: #374151 !important;
+}
+
+[theme~="dark"] vaadin-text-field input {
+    background: #374151 !important;
+    color: #f3f4f6 !important;
+}
+
+[theme~="dark"] vaadin-text-field[style*="#f9fafb"]::part(input-field),
+[theme~="dark"] vaadin-text-field::part(input-field) {
+    background: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #f3f4f6 !important;
+}
+
+/* ===== Dark Mode: Plugin Search Input - Force Override ===== */
+[theme~="dark"] .plugin-search-input {
+    --vaadin-input-field-background: #374151 !important;
+}
+
+[theme~="dark"] .plugin-search-input::part(input-field) {
+    background: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #f3f4f6 !important;
+}
+
+/* ===== Dark Mode: Override Vaadin Button Backgrounds in Filter/Lang Tabs ===== */
+[theme~="dark"] .plugin-filter-buttons > vaadin-button,
+[theme~="dark"] .plugin-filter-buttons > button {
+    background: transparent !important;
+    color: #9ca3af !important;
+}
+
+[theme~="dark"] .plugin-filter-buttons > vaadin-button.active,
+[theme~="dark"] .plugin-filter-buttons > button.active,
+[theme~="dark"] .plugin-filter-buttons > vaadin-button:has(.active),
+[theme~="dark"] .plugin-filter-button.active {
+    background: #1f2937 !important;
+    color: #60a5fa !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+[theme~="dark"] .export-lang-tabs > vaadin-button,
+[theme~="dark"] .export-lang-tabs > button {
+    background: transparent !important;
+    color: #9ca3af !important;
+}
+
+[theme~="dark"] .export-lang-tabs > vaadin-button.active,
+[theme~="dark"] .export-lang-tabs > button.active,
+[theme~="dark"] .export-lang-tab.active {
+    background: #1f2937 !important;
+    color: #60a5fa !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ===== Dark Mode: Force Vaadin Button Part Styling ===== */
+/* Target Vaadin button internal parts for dark mode */
+[theme~="dark"] .plugin-filter-button::part(label) {
+    color: #9ca3af !important;
+}
+
+[theme~="dark"] .plugin-filter-button.active::part(label) {
+    color: #60a5fa !important;
+}
+
+[theme~="dark"] .export-lang-tab::part(label) {
+    color: #9ca3af !important;
+}
+
+[theme~="dark"] .export-lang-tab.active::part(label) {
+    color: #60a5fa !important;
+}
+
+/* ===== Dark Mode: Vaadin Button Container Background ===== */
+/* Force backgrounds on parent containers */
+[theme~="dark"] .plugin-filter-buttons {
+    background: #374151 !important;
+    border-color: #4b5563 !important;
+}
+
+[theme~="dark"] .export-lang-tabs {
+    background: #374151 !important;
+    border-color: #4b5563 !important;
+}
+
+/* ===== Dark Mode: HTML Input Override ===== */
+/* Target the actual input element */
+[theme~="dark"] .plugin-search-bar input,
+[theme~="dark"] .plugin-search-input input,
+[theme~="dark"] vaadin-text-field input {
+    background: #374151 !important;
+    color: #f3f4f6 !important;
+    border-color: #4b5563 !important;
+}
+
+/* Vaadin input field slot */
+[theme~="dark"] vaadin-text-field [slot="input"] {
+    background: #374151 !important;
+    color: #f3f4f6 !important;
+}
+
+/* ===== Custom CSS Section Buttons ===== */
+/* Rainbow preset button - high contrast colorful style */
+.rainbow-preset-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4) !important;
+    transition: all 0.2s ease !important;
+}
+
+.rainbow-preset-btn:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5) !important;
+}
+
+.rainbow-preset-btn:active {
+    transform: translateY(0) !important;
+}
+
+.rainbow-preset-btn vaadin-icon,
+.rainbow-preset-btn iron-icon {
+    color: white !important;
+}
+
+/* Clear style button - high contrast error style */
+.clear-style-btn {
+    background: transparent !important;
+    color: #dc2626 !important;
+    font-weight: 500 !important;
+    border: 2px solid #dc2626 !important;
+    transition: all 0.2s ease !important;
+}
+
+.clear-style-btn:hover {
+    background: #dc2626 !important;
+    color: white !important;
+}
+
+.clear-style-btn vaadin-icon,
+.clear-style-btn iron-icon {
+    color: currentColor !important;
+}
+
+/* Dark mode adjustments for CSS buttons */
+[theme~="dark"] .rainbow-preset-btn {
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+}
+
+[theme~="dark"] .clear-style-btn {
+    color: #f87171 !important;
+    border-color: #f87171 !important;
+}
+
+[theme~="dark"] .clear-style-btn:hover {
+    background: #f87171 !important;
+    color: #1f2937 !important;
+}
+
+/* Open source badge styling */
+.opensource-badge {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #059669 !important;
+    background: rgba(5, 150, 105, 0.1) !important;
+    padding: 3px 10px !important;
+    border-radius: 12px !important;
+    margin-left: auto !important;
+    border: 1px solid rgba(5, 150, 105, 0.3) !important;
+}
+
+[theme~="dark"] .opensource-badge {
+    color: #34d399 !important;
+    background: rgba(52, 211, 153, 0.15) !important;
+    border-color: rgba(52, 211, 153, 0.3) !important;
+}
+
+/* CSS preset buttons container */
+.css-preset-buttons {
+    gap: 12px !important;
+    margin-bottom: 12px !important;
+}
+
+/* Custom CSS textarea */
+.custom-css-area::part(input-field) {
+    font-family: var(--app-font-mono) !important;
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+    background: var(--app-bg-tertiary) !important;
+    border-color: var(--app-border-color) !important;
+}
+
+[theme~="dark"] .custom-css-area::part(input-field) {
+    background: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #f3f4f6 !important;
+}
+
+/* CSS hint styling */
+.css-hint {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 12px !important;
+    color: var(--app-text-muted) !important;
+    margin-top: 8px !important;
+}
+
+.css-hint vaadin-icon,
+.css-hint iron-icon {
+    color: var(--app-text-muted) !important;
+}

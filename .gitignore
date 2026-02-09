@@ -1,0 +1,64 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+
+# Vaadin
+node_modules/
+frontend/generated/
+vite.generated.ts
+types.d.ts
+tsconfig.json
+pnpm-lock.yaml
+package-lock.json
+package.json
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables (contains secrets)
+.env
+.env.local
+.env.*.local
+
+# Oracle Wallet (contains sensitive connection info)
+wallet/
+*.wallet/
+*_wallet/
+
+# Build artifacts
+target/
+out/
+bin/
+
+# Test reports
+test-output/
+.ace-tool/
+
+# Claude AI work files
+.claude/
+
+# Local Maven repository
+.m2/
+
+# H2 file database
+data/
+
+# Vaadin bundles (large build artifacts)
+src/main/bundles/dev.bundle
+src/main/bundles/prod.bundle

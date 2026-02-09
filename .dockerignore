@@ -1,0 +1,9 @@
+.git
+.gradle
+build
+data
+node_modules
+.env
+.idea
+*.iml
+wallet/Wallet_ckeditoratp.zip

@@ -1,0 +1,33 @@
+/* 隐藏 context-menu-item 的 checkmark */
+/* 这个 CSS 文件会被注入到 vaadin-context-menu-item 的 shadow DOM 中 */
+
+/* 直接隐藏 checkmark 元素 */
+[part="checkmark"] {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+}
+
+/* 移除 checkmark 占用的空间 - Lumo 变量 */
+:host {
+    --_lumo-item-selected-icon-display: none !important;
+    --lumo-item-selected-icon-display: none !important;
+}
+
+/* 确保内容不留出 checkmark 的空间 */
+[part="content"] {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}
+
+/* 隐藏 slot[name="prefix"] 中的 checkmark */
+slot[name="prefix"] {
+    display: none !important;
+}

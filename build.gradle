@@ -1,0 +1,129 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.0'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.vaadin' version '25.0.3'
+}
+
+group = 'com.wontlost'
+version = '1.0.0'
+description = 'Vaadin CKEditor Builder'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url = uri('https://maven.vaadin.com/vaadin-addons') }
+    maven { url = uri('https://maven.vaadin.com/vaadin-prereleases') }
+}
+
+ext {
+    vaadinVersion = '25.0.3'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "com.vaadin:vaadin-bom:${vaadinVersion}"
+    }
+}
+
+dependencies {
+    // Vaadin
+    implementation 'com.vaadin:vaadin'
+    developmentOnly 'com.vaadin:vaadin-dev'
+    implementation 'com.vaadin:vaadin-core'
+    implementation 'com.vaadin:vaadin-spring'
+
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot'
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework:spring-web'
+
+    // JSON Processing
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // Jakarta
+    compileOnly 'jakarta.servlet:jakarta.servlet-api'
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api'
+
+    // VaadinCKEditor
+    implementation 'com.wontlost:ckeditor-vaadin:5.0.4'
+
+    // Reactive Streams
+    implementation 'org.reactivestreams:reactive-streams'
+
+    // Database
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly 'com.h2database:h2'
+
+    // Oracle ATP Database
+    runtimeOnly 'com.oracle.database.jdbc:ojdbc11:21.15.0.0'
+    runtimeOnly 'com.oracle.database.jdbc:ucp:21.15.0.0'
+    runtimeOnly 'com.oracle.database.security:oraclepki:21.15.0.0'
+    runtimeOnly 'com.oracle.database.security:osdt_core:21.15.0.0'
+    runtimeOnly 'com.oracle.database.security:osdt_cert:21.15.0.0'
+
+    // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+vaadin {
+    productionMode = false
+}
+
+tasks.named('test') {
+    useJUnitPlatform {
+        excludeTags 'local'
+    }
+}
+
+// 本地集成测试（连接真实 H2 文件 DB + ckeditorlocal Oracle）
+tasks.register('localTest', Test) {
+    description = '本地集成测试（连接真实 H2 文件 DB + ckeditorlocal Oracle）'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'local'
+    }
+    // 从 .env 加载环境变量（Oracle 密码等）
+    def envFile = file('.env')
+    if (envFile.exists()) {
+        envFile.readLines().each { line ->
+            if (line && !line.startsWith('#') && line.contains('=')) {
+                def (key, value) = line.split('=', 2)
+                environment key.trim(), value.trim()
+            }
+        }
+    }
+}
+
+// Load environment variables from .env file for bootRun
+tasks.named('bootRun') {
+    def envFile = file('.env')
+    if (envFile.exists()) {
+        envFile.readLines().each { line ->
+            if (line && !line.startsWith('#') && line.contains('=')) {
+                def (key, value) = line.split('=', 2)
+                environment key.trim(), value.trim()
+            }
+        }
+    }
+}
+
+// Production build profile
+tasks.register('productionBuild') {
+    dependsOn 'vaadinBuildFrontend', 'build'
+    doFirst {
+        vaadin.productionMode = true
+    }
+}

@@ -1,0 +1,94 @@
+/**
+ * Document Editor Styles
+ *
+ * Application-specific customizations for the Document Editor view.
+ * The base document editor styles are now built into the vaadin-ckeditor Addon.
+ *
+ * This file contains:
+ * - Font imports
+ * - CSS variable overrides for customization
+ * - View-specific layout adjustments
+ * - Dark theme support
+ * - Responsive adjustments
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+/* ===== CSS Variables (Override Addon defaults) ===== */
+:root {
+    --ck-content-font-family: 'Lato', sans-serif;
+}
+
+/* ===== Print Styles ===== */
+@media print {
+    body {
+        margin: 0 !important;
+    }
+}
+
+/* ===== Document Editor View Container ===== */
+.document-editor-view {
+    font-family: var(--ck-content-font-family);
+}
+
+/* The wrapper div around vaadin-ckeditor */
+.document-editor-container {
+    font-family: var(--ck-content-font-family);
+    width: 100%;
+    padding: 16px 24px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* ===== VaadinCKEditor Document Editor Customizations ===== */
+
+/* Apply font family to editor container */
+vaadin-ckeditor.document-editor .editor-container {
+    font-family: var(--ck-content-font-family);
+}
+
+/* Make the component fill its container but allow centering */
+vaadin-ckeditor.document-editor {
+    display: block;
+    width: 100%;
+    max-width: 1600px; /* Maximum width for very large screens */
+}
+
+/* ===== Responsive Height ===== */
+/* Override the fixed editor height for better responsiveness */
+vaadin-ckeditor.document-editor {
+    --ck-editor-height: calc(100vh - 180px);
+}
+
+/* ===== Dark Theme Support ===== */
+[data-ck-theme="dark"] vaadin-ckeditor.document-editor .ck.ck-editor__editable {
+    background: hsl(0, 0%, 15%) !important;
+    border-color: hsl(0, 0%, 30%) !important;
+    color: hsl(0, 0%, 90%);
+}
+
+/* ===== Responsive Adjustments ===== */
+@media (max-width: 900px) {
+    vaadin-ckeditor.document-editor .ck.ck-editor__editable {
+        min-width: calc(180mm + 2px) !important;
+        max-width: calc(180mm + 2px) !important;
+        padding: 15mm 10mm !important;
+    }
+}
+
+@media (max-width: 700px) {
+    /* Hide outline sidebar on narrow screens */
+    vaadin-ckeditor.document-editor .editor-container__sidebar {
+        display: none !important;
+    }
+
+    /* Full width editor on mobile */
+    vaadin-ckeditor.document-editor .ck.ck-editor__editable {
+        min-width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 10mm 8mm !important;
+    }
+}

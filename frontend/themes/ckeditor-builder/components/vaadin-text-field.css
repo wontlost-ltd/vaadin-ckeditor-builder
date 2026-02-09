@@ -1,0 +1,30 @@
+/* 去除搜索插件输入框的 focus 蓝色边框 */
+/* 仅针对带有 plugin-search 类的输入框 */
+
+/* 覆盖 focus ring 颜色变量 */
+:host(.plugin-search) {
+    --_focus-ring-color: transparent !important;
+    --_focus-ring-width: 0 !important;
+    --vaadin-focus-ring-color: transparent !important;
+    --vaadin-focus-ring-width: 0 !important;
+}
+
+/* focused 状态下移除 box-shadow */
+:host(.plugin-search[focused]) [part="input-field"] {
+    box-shadow: none !important;
+}
+
+/* focus-ring 状态下移除 box-shadow */
+:host(.plugin-search[focus-ring]) [part="input-field"] {
+    box-shadow: none !important;
+}
+
+/* 普通状态也确保无 box-shadow */
+:host(.plugin-search) [part="input-field"] {
+    box-shadow: none !important;
+}
+
+/* hover 状态的 ::after 伪元素 */
+:host(.plugin-search) [part="input-field"]::after {
+    opacity: 0 !important;
+}
