@@ -41,7 +41,7 @@ public class GettingStartedStep implements WizardStep {
     private final Map<String, CKEditorPreset> cardPresetMap = new HashMap<>();
     // 暂不可用的预设卡片（Coming Soon）
     private static final Set<String> DISABLED_CARD_IDS = Set.of(
-        "collaborative", "ai-document", "email", "notion"
+        "ai-document", "email", "notion"
     );
     private String selectedCardId;
     private CKEditorPreset selectedPreset;

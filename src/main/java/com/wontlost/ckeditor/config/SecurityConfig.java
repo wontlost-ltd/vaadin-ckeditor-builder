@@ -16,8 +16,8 @@ import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * Spring Security 配置
- * 使用 NavigationAccessControl 保护管理员页面
- * HTTP 层允许所有请求，由 Vaadin 的视图注解控制访问
+ * 使用 NavigationAccessControl 保护管理员页面和协作编辑器。
+ * 视图级访问控制由 @AnonymousAllowed / @PermitAll / @RolesAllowed 注解驱动。
  */
 @Configuration
 @EnableWebSecurity
@@ -31,23 +31,24 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // HTTP 层允许所有请求
-        // 由 Vaadin 的 NavigationAccessControl 根据 @RolesAllowed/@AnonymousAllowed 注解控制访问
+        // token 端点需要认证（协作编辑器通过 beforeEnter 检查认证状态）
         http.authorizeHttpRequests(auth -> auth
+            .requestMatchers("/api/ckeditor/token").fullyAuthenticated()
             .anyRequest().permitAll()
         );
 
-        // 配置表单登录
+        // 配置表单登录 — 登录成功后始终跳转到协作编辑器
+        // alwaysUse=true 避免 saved request 指向 /api/ckeditor/token（该端点触发认证）
         http.formLogin(form -> form
             .loginPage("/login")
-            .defaultSuccessUrl("/admin/subscribers", true)
+            .defaultSuccessUrl("/collaborative-document-editor", true)
             .permitAll()
         );
 
-        // 配置登出
+        // 配置登出 — 退出后重定向到协作编辑器（显示登录表单）
         http.logout(logout -> logout
             .logoutUrl("/logout")
-            .logoutSuccessUrl("/")
+            .logoutSuccessUrl("/collaborative-document-editor")
             .permitAll()
         );
 
@@ -62,8 +63,8 @@ public class SecurityConfig {
 
     /**
      * 配置 NavigationAccessControl 使用 AnnotatedViewAccessChecker
-     * 这将根据视图类上的 @AnonymousAllowed, @PermitAll, @RolesAllowed 注解控制访问
-     * 当访问被拒绝时，重定向到登录页面
+     * 根据视图类上的 @AnonymousAllowed, @PermitAll, @RolesAllowed 注解控制访问
+     * @PermitAll 要求用户已认证，未认证时重定向到登录页面
      */
     @Bean
     static NavigationAccessControlConfigurer navigationAccessControlConfigurer() {
@@ -84,6 +85,19 @@ public class SecurityConfig {
             .password(passwordEncoder.encode(adminPassword))
             .roles("ADMIN")
             .build();
-        return new InMemoryUserDetailsManager(admin);
+
+        // 协作编辑器测试用户
+        UserDetails alice = User.builder()
+            .username("alice")
+            .password(passwordEncoder.encode("alice"))
+            .roles("USER")
+            .build();
+        UserDetails bob = User.builder()
+            .username("bob")
+            .password(passwordEncoder.encode("bob"))
+            .roles("USER")
+            .build();
+
+        return new InMemoryUserDetailsManager(admin, alice, bob);
     }
 }

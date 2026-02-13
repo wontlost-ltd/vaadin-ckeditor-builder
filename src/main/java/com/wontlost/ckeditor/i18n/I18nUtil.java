@@ -75,9 +75,12 @@ public final class I18nUtil {
      * 获取指定语言的翻译文本
      */
     public static String get(String key, Locale locale, Object... params) {
-        I18NProvider provider = VaadinService.getCurrent().getInstantiator().getI18NProvider();
-        if (provider != null) {
-            return provider.getTranslation(key, locale, params);
+        VaadinService service = VaadinService.getCurrent();
+        if (service != null) {
+            I18NProvider provider = service.getInstantiator().getI18NProvider();
+            if (provider != null) {
+                return provider.getTranslation(key, locale, params);
+            }
         }
         return key;
     }

@@ -9,6 +9,7 @@ import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.IFrame;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -73,6 +74,7 @@ public class PreviewExportStep implements WizardStep {
     private Div codePreview;
     private VaadinCKEditor currentEditor;
     private Dialog previewDialog;
+    private Dialog collaborativePreviewDialog;
     private Div dialogEditorContainer;
     private VaadinCKEditor dialogEditor;
     private final Map<BuilderState.ExportLanguage, Button> langButtons = new HashMap<>();
@@ -313,6 +315,9 @@ public class PreviewExportStep implements WizardStep {
             if (previewDialog != null && previewDialog.isOpened()) {
                 updateDialogPreview();
             }
+        } else if (state.getPreset() == CKEditorPreset.COLLABORATIVE) {
+            // Collaborative 预设使用缩略图 + iframe 弹窗
+            renderCollaborativeThumbnail();
         } else {
             // 其他预设使用内嵌预览
             renderInlinePreview();
@@ -562,6 +567,422 @@ public class PreviewExportStep implements WizardStep {
     private void renderDocumentThumbnail() {
         Div thumbnail = createDocumentThumbnail();
         editorContainer.add(thumbnail);
+    }
+
+    /**
+     * 渲染 Collaborative 预设的缩略图预览（带协作视觉元素）
+     */
+    private void renderCollaborativeThumbnail() {
+        Div thumbnail = createCollaborativeThumbnail();
+        editorContainer.add(thumbnail);
+    }
+
+    /**
+     * 创建 Collaborative 预览缩略图（复用 Document 缩略图结构，增加协作视觉元素）
+     */
+    private Div createCollaborativeThumbnail() {
+        Div thumbnail = new Div();
+        thumbnail.addClassName("collaborative-preview-thumbnail");
+        thumbnail.getStyle()
+            .set("position", "absolute")
+            .set("top", "0")
+            .set("left", "0")
+            .set("right", "0")
+            .set("bottom", "0")
+            .set("width", "100%")
+            .set("height", "100%")
+            .set("min-height", "0")
+            .set("border", "1px solid var(--lumo-contrast-20pct)")
+            .set("border-radius", "12px")
+            .set("background", "var(--lumo-base-color)")
+            .set("cursor", "pointer")
+            .set("display", "flex")
+            .set("flex-direction", "column")
+            .set("overflow", "hidden")
+            .set("transition", "box-shadow 0.2s");
+
+        // 模拟菜单栏
+        Div menuBar = new Div();
+        menuBar.getStyle()
+            .set("height", "28px")
+            .set("min-height", "28px")
+            .set("background", "var(--lumo-contrast-5pct)")
+            .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("padding", "0 12px")
+            .set("gap", "16px");
+
+        String[] menuKeys = {"file", "edit", "view", "insert", "format", "tools", "help"};
+        for (String key : menuKeys) {
+            Span menuItem = new Span(I18nUtil.get("step7.preview.menu." + key));
+            menuItem.getStyle()
+                .set("font-size", "11px")
+                .set("color", "var(--lumo-secondary-text-color)");
+            menuBar.add(menuItem);
+        }
+
+        // 模拟工具栏（增加协作图标：trackChanges、comment）
+        Div toolbar = new Div();
+        toolbar.getStyle()
+            .set("height", "36px")
+            .set("min-height", "36px")
+            .set("background", "var(--lumo-contrast-5pct)")
+            .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("padding", "0 8px")
+            .set("gap", "2px")
+            .set("flex-wrap", "nowrap")
+            .set("overflow", "hidden");
+
+        // 第一组：撤销/重做
+        toolbar.add(createToolbarIconButton(VaadinIcon.ARROW_BACKWARD));
+        toolbar.add(createToolbarIconButton(VaadinIcon.ARROW_FORWARD));
+        toolbar.add(createToolbarSeparator());
+
+        // 第二组：协作功能（trackChanges、comment）
+        toolbar.add(createToolbarIconButton(VaadinIcon.RECORDS));
+        toolbar.add(createToolbarIconButton(VaadinIcon.COMMENT_ELLIPSIS));
+        toolbar.add(createToolbarSeparator());
+
+        // 第三组：查找/全屏
+        toolbar.add(createToolbarIconButton(VaadinIcon.SEARCH));
+        toolbar.add(createToolbarIconButton(VaadinIcon.EXPAND_SQUARE));
+        toolbar.add(createToolbarSeparator());
+
+        // 第四组：文本格式
+        toolbar.add(createToolbarIconButton(VaadinIcon.BOLD));
+        toolbar.add(createToolbarIconButton(VaadinIcon.ITALIC));
+        toolbar.add(createToolbarIconButton(VaadinIcon.UNDERLINE));
+        toolbar.add(createToolbarSeparator());
+
+        // 第五组：插入
+        toolbar.add(createToolbarIconButton(VaadinIcon.LINK));
+        toolbar.add(createToolbarIconButton(VaadinIcon.PICTURE));
+        toolbar.add(createToolbarIconButton(VaadinIcon.TABLE));
+
+        // 用户头像指示器（协作特征）
+        Div presenceBar = new Div();
+        presenceBar.getStyle()
+            .set("margin-left", "auto")
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("gap", "4px");
+
+        String[] avatarColors = {"#4CAF50", "#2196F3", "#FF9800"};
+        String[] avatarLabels = {"A", "B", "C"};
+        for (int i = 0; i < 3; i++) {
+            Div avatar = new Div();
+            avatar.getStyle()
+                .set("width", "22px")
+                .set("height", "22px")
+                .set("border-radius", "50%")
+                .set("background", avatarColors[i])
+                .set("color", "white")
+                .set("font-size", "11px")
+                .set("font-weight", "600")
+                .set("display", "flex")
+                .set("align-items", "center")
+                .set("justify-content", "center");
+            avatar.setText(avatarLabels[i]);
+            presenceBar.add(avatar);
+        }
+        toolbar.add(presenceBar);
+
+        // 模拟内容区域（三栏布局：大纲 | 文档 | 批注侧栏）
+        Div content = new Div();
+        content.getStyle()
+            .set("flex", "1")
+            .set("min-height", "0")
+            .set("padding", "16px")
+            .set("display", "flex")
+            .set("gap", "12px")
+            .set("background", "var(--lumo-contrast-5pct)")
+            .set("overflow", "hidden");
+
+        // 左侧：模拟文档大纲
+        Div outline = new Div();
+        outline.getStyle()
+            .set("width", "100px")
+            .set("min-width", "100px")
+            .set("background", "var(--lumo-base-color)")
+            .set("border-radius", "4px")
+            .set("padding", "10px")
+            .set("border", "1px solid var(--lumo-contrast-10pct)");
+
+        Span outlineTitle = new Span(I18nUtil.get("step7.preview.documentOutline"));
+        outlineTitle.getStyle()
+            .set("font-size", "10px")
+            .set("font-weight", "600")
+            .set("color", "var(--lumo-secondary-text-color)")
+            .set("display", "block")
+            .set("margin-bottom", "8px");
+        outline.add(outlineTitle);
+
+        for (int i = 0; i < 4; i++) {
+            Div item = new Div();
+            item.getStyle()
+                .set("height", "7px")
+                .set("margin-bottom", "5px")
+                .set("border-radius", "2px")
+                .set("background", "var(--lumo-contrast-10pct)")
+                .set("margin-left", i % 2 == 1 ? "10px" : "0")
+                .set("width", i % 2 == 1 ? "65%" : "85%");
+            outline.add(item);
+        }
+        content.add(outline);
+
+        // 中间：模拟文档内容（A4 样式）
+        Div docWrapper = new Div();
+        docWrapper.getStyle()
+            .set("flex", "1")
+            .set("display", "flex")
+            .set("justify-content", "center")
+            .set("overflow", "hidden");
+
+        Div docContent = new Div();
+        docContent.getStyle()
+            .set("width", "100%")
+            .set("max-width", "240px")
+            .set("background", "white")
+            .set("border", "1px solid var(--lumo-contrast-10pct)")
+            .set("border-radius", "2px")
+            .set("padding", "16px 12px")
+            .set("box-shadow", "0 2px 8px rgba(0, 0, 0, 0.08)");
+
+        // 模拟标题
+        Div titleLine = new Div();
+        titleLine.getStyle()
+            .set("height", "11px")
+            .set("width", "65%")
+            .set("margin-bottom", "10px")
+            .set("border-radius", "2px")
+            .set("background", "var(--lumo-contrast-20pct)");
+        docContent.add(titleLine);
+
+        // 模拟文本行（部分带高亮表示 track changes）
+        for (int i = 0; i < 10; i++) {
+            Div line = new Div();
+            line.getStyle()
+                .set("height", "5px")
+                .set("margin-bottom", "5px")
+                .set("border-radius", "2px");
+
+            if (i == 2 || i == 6) {
+                // 模拟 track changes 高亮行
+                line.getStyle()
+                    .set("background", "rgba(76, 175, 80, 0.2)")
+                    .set("border-left", "2px solid #4CAF50")
+                    .set("width", "90%");
+            } else if (i == 4) {
+                // 模拟删除线
+                line.getStyle()
+                    .set("background", "rgba(244, 67, 54, 0.15)")
+                    .set("border-left", "2px solid #F44336")
+                    .set("width", "70%");
+            } else if (i == 8) {
+                // 模拟小标题
+                line.getStyle()
+                    .set("height", "8px")
+                    .set("width", "45%")
+                    .set("margin-top", "6px")
+                    .set("background", "var(--lumo-contrast-15pct)");
+            } else {
+                line.getStyle()
+                    .set("background", "var(--lumo-contrast-10pct)")
+                    .set("width", i == 3 ? "80%" : "100%");
+            }
+            docContent.add(line);
+        }
+        docWrapper.add(docContent);
+        content.add(docWrapper);
+
+        // 右侧：模拟批注侧栏（annotation sidebar）
+        Div sidebar = new Div();
+        sidebar.getStyle()
+            .set("width", "120px")
+            .set("min-width", "120px")
+            .set("display", "flex")
+            .set("flex-direction", "column")
+            .set("gap", "8px");
+
+        // 模拟评论框
+        String[] commentAuthors = {"Alice", "Bob", "Charlie"};
+        String[] commentColors = {"#4CAF50", "#2196F3", "#FF9800"};
+        int[] commentLineWidths = {85, 70, 90};
+        for (int i = 0; i < 3; i++) {
+            Div commentBox = new Div();
+            commentBox.getStyle()
+                .set("background", "var(--lumo-base-color)")
+                .set("border", "1px solid var(--lumo-contrast-10pct)")
+                .set("border-radius", "6px")
+                .set("padding", "8px")
+                .set("border-left", "3px solid " + commentColors[i]);
+
+            // 作者名
+            Span author = new Span(commentAuthors[i]);
+            author.getStyle()
+                .set("font-size", "9px")
+                .set("font-weight", "600")
+                .set("color", commentColors[i])
+                .set("display", "block")
+                .set("margin-bottom", "4px");
+            commentBox.add(author);
+
+            // 模拟评论文字
+            for (int j = 0; j < 2; j++) {
+                Div textLine = new Div();
+                textLine.getStyle()
+                    .set("height", "4px")
+                    .set("margin-bottom", "3px")
+                    .set("border-radius", "2px")
+                    .set("background", "var(--lumo-contrast-10pct)")
+                    .set("width", (j == 0 ? commentLineWidths[i] : commentLineWidths[i] - 20) + "%");
+                commentBox.add(textLine);
+            }
+            sidebar.add(commentBox);
+        }
+        content.add(sidebar);
+
+        // 点击提示覆盖层
+        Div hintOverlay = new Div();
+        hintOverlay.getStyle()
+            .set("position", "absolute")
+            .set("top", "0")
+            .set("left", "0")
+            .set("right", "0")
+            .set("bottom", "0")
+            .set("display", "flex")
+            .set("flex-direction", "column")
+            .set("align-items", "center")
+            .set("justify-content", "center")
+            .set("background", "rgba(0, 0, 0, 0)")
+            .set("transition", "background 0.2s");
+
+        Div hintBox = new Div();
+        hintBox.getStyle()
+            .set("background", "var(--lumo-base-color)")
+            .set("padding", "12px 20px")
+            .set("border-radius", "8px")
+            .set("box-shadow", "0 4px 12px rgba(0, 0, 0, 0.15)")
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("gap", "8px")
+            .set("opacity", "0")
+            .set("transform", "translateY(10px)")
+            .set("transition", "all 0.2s");
+
+        Icon expandIcon = VaadinIcon.EXPAND_FULL.create();
+        expandIcon.setSize("18px");
+        expandIcon.getStyle().set("color", "var(--lumo-primary-color)");
+
+        Span hint = new Span(I18nUtil.get("step7.preview.collaborativeClickToPreview"));
+        hint.getStyle()
+            .set("font-size", "14px")
+            .set("font-weight", "500")
+            .set("color", "var(--lumo-body-text-color)");
+
+        hintBox.add(expandIcon, hint);
+        hintOverlay.add(hintBox);
+
+        // 使用相对定位的容器
+        Div container = new Div();
+        container.getStyle()
+            .set("width", "100%")
+            .set("height", "100%")
+            .set("min-height", "0")
+            .set("position", "relative")
+            .set("display", "flex")
+            .set("flex-direction", "column");
+        container.add(menuBar, toolbar, content, hintOverlay);
+
+        thumbnail.add(container);
+        thumbnail.addClickListener(e -> openCollaborativePreviewDialog());
+
+        // 悬停效果
+        thumbnail.getElement().executeJs(
+            "this.addEventListener('mouseenter', () => {" +
+            "  this.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';" +
+            "  this.querySelector('[style*=\"rgba(0, 0, 0, 0)\"]').style.background = 'rgba(0, 0, 0, 0.3)';" +
+            "  this.querySelector('[style*=\"opacity: 0\"]').style.opacity = '1';" +
+            "  this.querySelector('[style*=\"translateY(10px)\"]').style.transform = 'translateY(0)';" +
+            "});" +
+            "this.addEventListener('mouseleave', () => {" +
+            "  this.style.boxShadow = 'none';" +
+            "  const overlay = this.querySelector('[style*=\"background: rgba\"]');" +
+            "  if (overlay) overlay.style.background = 'rgba(0, 0, 0, 0)';" +
+            "  const box = this.querySelectorAll('div')[this.querySelectorAll('div').length - 2];" +
+            "  if (box) { box.style.opacity = '0'; box.style.transform = 'translateY(10px)'; }" +
+            "});"
+        );
+
+        return thumbnail;
+    }
+
+    /**
+     * 打开 Collaborative 预览弹窗（iframe 加载 /collaborative-document-editor）
+     */
+    private void openCollaborativePreviewDialog() {
+        ensureCollaborativePreviewDialog();
+        collaborativePreviewDialog.open();
+
+        // 应用弹窗样式（毛玻璃背景和标题居中）
+        UI.getCurrent().getPage().executeJs(
+            "setTimeout(() => {" +
+            "  const dialog = document.querySelector('vaadin-dialog.collaborative-preview-dialog');" +
+            "  if (!dialog || !dialog.shadowRoot) return;" +
+            "  const overlay = dialog.shadowRoot.querySelector('vaadin-dialog-overlay');" +
+            "  if (!overlay || !overlay.shadowRoot) return;" +
+            "  const backdrop = overlay.shadowRoot.querySelector('[part=\"backdrop\"]');" +
+            "  if (backdrop) {" +
+            "    backdrop.style.backdropFilter = 'blur(4px)';" +
+            "    backdrop.style.webkitBackdropFilter = 'blur(4px)';" +
+            "    backdrop.style.background = 'rgba(0, 0, 0, 0.5)';" +
+            "  }" +
+            "  const header = overlay.shadowRoot.querySelector('[part=\"header\"]');" +
+            "  if (header) header.style.justifyContent = 'center';" +
+            "  const title = overlay.shadowRoot.querySelector('[part=\"title\"]');" +
+            "  if (title) { title.style.textAlign = 'center'; title.style.flex = '1'; }" +
+            "}, 100);"
+        );
+    }
+
+    /**
+     * 确保 Collaborative 预览弹窗已创建（iframe 模式，无需清理编辑器实例）
+     */
+    private void ensureCollaborativePreviewDialog() {
+        if (collaborativePreviewDialog != null) return;
+
+        collaborativePreviewDialog = new Dialog();
+        collaborativePreviewDialog.setWidth("95vw");
+        collaborativePreviewDialog.setHeight("95vh");
+        collaborativePreviewDialog.setCloseOnEsc(true);
+        collaborativePreviewDialog.setCloseOnOutsideClick(true);
+        collaborativePreviewDialog.addClassName("collaborative-preview-dialog");
+        collaborativePreviewDialog.setHeaderTitle(
+            I18nUtil.get("step7.preview.collaborativeDialogTitle"));
+
+        // 关闭按钮
+        Button closeBtn = new Button(VaadinIcon.CLOSE.create(),
+            e -> collaborativePreviewDialog.close());
+        closeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ICON);
+        collaborativePreviewDialog.getHeader().add(closeBtn);
+
+        // iframe 加载协作编辑器页面
+        IFrame iframe = new IFrame("/collaborative-document-editor");
+        iframe.setSizeFull();
+        iframe.getElement().getStyle()
+            .set("border", "none")
+            .set("border-radius", "8px");
+
+        Div iframeContainer = new Div(iframe);
+        iframeContainer.setSizeFull();
+        iframeContainer.getStyle()
+            .set("padding", "0")
+            .set("box-sizing", "border-box");
+
+        collaborativePreviewDialog.add(iframeContainer);
     }
 
     /**
@@ -1413,6 +1834,11 @@ public class PreviewExportStep implements WizardStep {
             previewDialog.close();
         }
         cleanupDialogEditor();
+
+        // 清理协作预览弹窗
+        if (collaborativePreviewDialog != null && collaborativePreviewDialog.isOpened()) {
+            collaborativePreviewDialog.close();
+        }
     }
 
     @Override

@@ -1,0 +1,740 @@
+/**
+ * Collaborative Document Editor Styles
+ *
+ * 匹配 CKEditor 5 Builder 官方参考实现的三栏布局样式。
+ * DOM 结构由 vaadin-ckeditor addon 生成，此文件提供匹配的布局规则。
+ *
+ * 结构：
+ *   .editor-container                 — 编辑器主容器（带边框）
+ *     .editor-container__menu-bar     — 菜单栏
+ *     .editor-container__toolbar      — 工具栏
+ *     .editor-container__editor-wrapper — 三栏 flex 容器（可滚动）
+ *       .editor-container__sidebar    — 左侧 Document Outline
+ *       .editor-container__editor     — 中间 A4 纸编辑区
+ *       .minimap-container            — 右侧缩略图
+ *       .annotation-sidebar-wrapper   — 右侧批注区域（包含在线用户 + 批注）
+ *         .presence-list-container    — 在线用户列表
+ *         .annotation-sidebar-container — 批注侧栏
+ *
+ * 暗色主题：
+ *   通过 @media (prefers-color-scheme: dark) 和 CKEditor CSS 变量实现，
+ *   与 theme-manager.ts 的暗色主题机制保持一致。
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+/* ===== CSS Variables ===== */
+:root {
+    --ck-content-font-family: 'Lato', sans-serif;
+    --ck-sidebar-width: 270px;
+}
+
+/* ===== View Container ===== */
+.collaborative-document-editor-view {
+    font-family: var(--ck-content-font-family);
+}
+
+/* ===== Loading Overlay ===== */
+.loading-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    padding: 40px;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--lumo-contrast-10pct);
+    border-top-color: var(--lumo-primary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== Editor Wrapper ===== */
+.collaborative-editor-container {
+    font-family: var(--ck-content-font-family);
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+/* ===== Editor Component ===== */
+vaadin-ckeditor.collaborative-editor {
+    display: block;
+    width: 100%;
+    --ck-editor-height: calc(100vh - 200px);
+}
+
+vaadin-ckeditor.collaborative-editor .editor-container {
+    font-family: var(--ck-content-font-family);
+}
+
+/* ===== Editor Container (Document Editor 模式) ===== */
+vaadin-ckeditor.collaborative-editor .editor-container_document-editor {
+    border: 1px solid var(--ck-color-base-border, #ccced1);
+}
+
+/* ===== Menu Bar ===== */
+vaadin-ckeditor.collaborative-editor .editor-container_document-editor .editor-container__menu-bar > .ck.ck-menu-bar {
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+}
+
+/* ===== Toolbar ===== */
+vaadin-ckeditor.collaborative-editor .editor-container_document-editor .editor-container__toolbar {
+    display: flex;
+    position: relative;
+    box-shadow: 0 2px 3px hsla(0, 0%, 0%, 0.078);
+}
+
+vaadin-ckeditor.collaborative-editor .editor-container_document-editor .editor-container__toolbar > .ck.ck-toolbar {
+    flex-grow: 1;
+    width: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+}
+
+/* ===== Editor Wrapper（三栏 flex 容器） ===== */
+vaadin-ckeditor.collaborative-editor .editor-container_document-editor .editor-container__editor-wrapper {
+    display: flex;
+    width: 100%;
+    max-height: var(--ck-editor-height);
+    min-height: var(--ck-editor-height);
+    overflow-y: scroll;
+    background: var(--ck-color-base-foreground, #fafafa);
+}
+
+/* ===== Editor Area（A4 纸张样式） ===== */
+vaadin-ckeditor.collaborative-editor .editor-container_document-editor .editor-container__editor {
+    margin-top: 28px;
+    margin-bottom: 28px;
+    height: 100%;
+}
+
+vaadin-ckeditor.collaborative-editor .editor-container_document-editor .editor-container__editor .ck.ck-editor__editable {
+    box-sizing: border-box;
+    min-width: calc(210mm + 2px);
+    max-width: calc(210mm + 2px);
+    min-height: 297mm;
+    height: fit-content;
+    padding: 20mm 12mm;
+    border: 1px hsl(0, 0%, 82.7%) solid;
+    background: var(--ck-color-base-background, hsl(0, 0%, 100%));
+    box-shadow: 0 2px 3px hsla(0, 0%, 0%, 0.078);
+    flex: 1 1 auto;
+    margin-left: 72px;
+    margin-right: 72px;
+}
+
+/* include-outline 时编辑器左边距收缩（留给 outline sidebar） */
+vaadin-ckeditor.collaborative-editor .editor-container_include-outline .editor-container__editor .ck.ck-editor__editable {
+    margin-left: 0;
+}
+
+/* include-annotations 时编辑器右边距收缩（留给 annotation sidebar） */
+vaadin-ckeditor.collaborative-editor .editor-container_include-annotations .editor-container__editor .ck.ck-editor__editable {
+    margin-right: 0;
+}
+
+/* ===== Sidebar（Document Outline） ===== */
+/* sticky 定位使文档大纲在编辑器外层滚动时保持可见 */
+vaadin-ckeditor.collaborative-editor .editor-container__sidebar {
+    min-width: var(--ck-sidebar-width);
+    max-width: var(--ck-sidebar-width);
+    margin-top: 28px;
+    margin-left: 10px;
+    margin-right: 10px;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    max-height: var(--ck-editor-height);
+    overflow-y: auto;
+}
+
+/* ===== Annotation Sidebar Wrapper（在线用户列表 + 批注侧栏的容器） ===== */
+/* sticky 定位使侧栏在编辑器外层滚动时保持可见；overflow:hidden 裁剪绝对定位的批注卡片 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-wrapper {
+    flex-direction: column;
+    min-width: var(--ck-sidebar-width);
+    max-width: var(--ck-sidebar-width);
+    margin-top: 16px;
+    margin-left: 10px;
+    margin-right: 10px;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    max-height: var(--ck-editor-height);
+    overflow: hidden;
+}
+
+/* ===== Presence List（在线用户列表，位于批注侧栏上方） ===== */
+vaadin-ckeditor.collaborative-editor .presence-list-container {
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    margin-top: 10px;
+}
+
+/* 用户列表 — 横向排列，紧凑间距 */
+vaadin-ckeditor.collaborative-editor .presence-list-container .ck.ck-presence-list {
+    gap: 0;
+}
+
+vaadin-ckeditor.collaborative-editor .presence-list-container .ck-presence-list__list {
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 列表项 — 无背景，仅承载头像 */
+vaadin-ckeditor.collaborative-editor .presence-list-container .ck-presence-list__list-item {
+    border: none !important;
+    background: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* 隐藏全名标签（仅保留 tooltip 显示全名） */
+vaadin-ckeditor.collaborative-editor .presence-list-container .ck-presence-list__list-item > .ck-label {
+    display: none !important;
+}
+
+/* 用户容器 — 圆形头像 */
+vaadin-ckeditor.collaborative-editor .presence-list-container .ck-user {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+}
+
+/* 隐藏空的头像图片占位 */
+vaadin-ckeditor.collaborative-editor .presence-list-container .ck-user__img {
+    display: none !important;
+}
+
+/* 用户名首字母 — 圆形头像样式 */
+vaadin-ckeditor.collaborative-editor .presence-list-container .ck-user__name {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ck-color-base-background, #fff);
+    background: hsl(0, 0%, 65%);
+    line-height: 1;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+/* 在线指示条 — 改为头像下方的圆点指示器 */
+vaadin-ckeditor.collaborative-editor .presence-list-container .ck-presence-list__marker {
+    display: block !important;
+    width: 5px !important;
+    height: 5px !important;
+    border-radius: 50%;
+    border: 2px solid var(--ck-color-base-foreground, #fafafa);
+    position: absolute !important;
+    bottom: -2px;
+    right: -2px;
+    margin: 0 !important;
+    /* 覆盖 ck-user__bg-color--N 的用户色，统一为绿色在线指示 */
+    background-color: hsl(142, 71%, 45%) !important;
+}
+
+/* 在线用户 — 头像高亮光环 + 绿色圆点 */
+vaadin-ckeditor.collaborative-editor .presence-list-container .ck-presence-list__list-item {
+    position: relative;
+}
+
+vaadin-ckeditor.collaborative-editor .presence-list-container .ck-presence-list__list-item .ck-user__name {
+    box-shadow: 0 0 0 2px var(--ck-color-base-foreground, #fafafa), 0 0 0 4px hsl(142, 71%, 45%);
+}
+
+/* ===== Comment Marker（编辑器内被评论的文字高亮） ===== */
+vaadin-ckeditor.collaborative-editor .ck-content .ck-comment-marker {
+    background-color: hsla(54, 100%, 62%, 0.4) !important;
+    border-bottom: 2px solid hsl(54, 100%, 48%) !important;
+}
+
+/* ===== Annotation Sidebar（批注侧栏 — 匹配 CKEditor Builder 参考实现） ===== */
+/* overflow:visible 让 JS 绝对定位批注卡片；裁剪由 annotation-sidebar-wrapper 的 overflow:hidden 负责 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+    overflow: visible;
+    position: relative;
+}
+
+/* 侧栏内部容器 — 透明背景，与参考一致 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck.ck-sidebar {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+/* ---- 批注卡片（ck-annotation-wrapper） ---- */
+/* 参考实现：border-radius:2px, box-shadow:0 1px 1px 1px #e6e6e6, 白色背景 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck.ck-annotation-wrapper {
+    border-radius: 2px;
+    border: none;
+    background: var(--ck-color-base-background, #fff);
+    box-shadow: 0 1px 1px 1px hsl(0, 0%, 90%);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck.ck-annotation-wrapper:hover {
+    box-shadow: 0 2px 4px 1px hsl(0, 0%, 84%);
+}
+
+/* 激活卡片 — 匹配参考实现 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck.ck-annotation-wrapper--active {
+    box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.2);
+}
+
+/* 高亮侧栏项 — 鼠标悬停或编辑器光标在对应评论标记内时，显示左侧黄色边框 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-sidebar-item:hover,
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-sidebar-item--comment-selected {
+    border-left: 3px solid hsl(54, 93%, 48%);
+}
+
+/* ---- 批注布局 — 匹配参考实现的 flex + grid 布局 ---- */
+/* 第一层：avatar 与 main 区域水平排列 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start;
+    padding: 8px;
+}
+
+/* 第二层：main 区域用 grid — 第一行 [info | actions]，第二行 [content 跨两列] */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation__main {
+    display: grid !important;
+    grid-template-columns: 1fr auto;
+    flex: 1;
+    min-width: 0;
+    padding-left: 8px;
+}
+
+/* info 行（用户名 + 时间）占第一列 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation__info {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+/* actions 按钮组占第一行第二列 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* content 区域跨两列，占第二行 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation__content-wrapper {
+    grid-column: 1 / -1;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-thread__comments {
+    padding-left: inherit;
+}
+
+/* ---- 用户头像（评论 + 建议通用）— 28px 圆形，2px 白色描边 ---- */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation__user {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--ck-color-base-background, #fff);
+    background: hsl(207, 52%, 44%);
+    margin: 3px 2px 2px;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation__user .ck-user__img {
+    display: none !important;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation__user .ck-user__name {
+    color: #fff;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 11px;
+}
+
+/* ---- 信息行（用户名 + 时间）— 参考实现：9.75px bold #757575 ---- */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation__info-name {
+    font-size: 8px;
+    font-weight: 700;
+    color: hsl(0, 0%, 46%);
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation__info-time {
+    font-size: 8px;
+    font-weight: 700;
+    color: hsl(0, 0%, 46%);
+    margin: 0 8px;
+}
+
+/* ---- 操作按钮 — 图标化，无背景无边框 ---- */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck.ck-button {
+    border-radius: 2px;
+    transition: opacity 0.15s ease;
+}
+
+/* Resolve 按钮 — 纯图标样式 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-comment--resolve {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    color: hsl(0, 0%, 60%) !important;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-comment--resolve .ck-button__icon {
+    width: 14px !important;
+    height: 14px !important;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-comment--resolve:hover {
+    opacity: 1;
+    color: hsl(120, 100%, 27%) !important;
+}
+
+/* Dropdown（三点菜单）按钮 — 纯图标样式 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation .ck-dropdown__button {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    color: hsl(0, 0%, 60%) !important;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation .ck-dropdown__button .ck-button__icon {
+    width: 14px !important;
+    height: 14px !important;
+}
+
+/* 隐藏 dropdown 箭头 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation .ck-dropdown__button .ck-dropdown__arrow {
+    display: none !important;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation .ck-dropdown__button:hover {
+    opacity: 1;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck.ck-button:hover {
+    background: transparent;
+}
+
+/* ---- 回复输入区 — 左头像 + 右输入框，底部 Reply/Cancel 按钮 ---- */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-comment__input-container {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start;
+    padding: 8px;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-comment__input-container--active {
+    background: hsl(213, 58%, 97%);
+}
+
+/* 回复区用户头像 — 24px 缩小版 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-thread__user {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--ck-color-base-background, #fff);
+    background: hsl(207, 52%, 44%);
+    margin: 2px;
+    flex-shrink: 0;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-thread__user .ck-user__img {
+    display: none !important;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-thread__user .ck-user__name {
+    color: #fff;
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 10px;
+}
+
+/* 输入框 wrapper — 占据头像右侧剩余空间 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-comment__input-wrapper {
+    flex: 1;
+    min-width: 0;
+    margin-left: 8px;
+}
+
+/* 回复输入框 — 添加内边距 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-comment__input .ck-editor__editable {
+    padding: 6px 8px !important;
+}
+
+/* 回复输入框高度约束 — 覆盖 CKEditor 默认 280px */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-comment__input-container .ck-comment__input .ck-editor__main > .ck-editor__editable.ck-editor__editable {
+    min-height: 40px !important;
+    max-height: 100px !important;
+    height: auto !important;
+    overflow-y: auto;
+}
+
+/* Reply / Cancel 按钮 — 默认隐藏，容器激活或编辑器获焦时显示 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-comment__input-actions {
+    display: none;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+/* 新评论输入框激活时（用户点击 Comment 按钮后）始终显示提交按钮 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-comment__input-container--active .ck-comment__input-actions {
+    display: flex !important;
+}
+
+/* 回复输入框 — 编辑器获焦时显示 */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-comment__input-wrapper:has(.ck-editor__editable.ck-focused) .ck-comment__input-actions {
+    display: flex;
+}
+
+/* ---- ck-sidebar-item 绝对定位 — JS 根据 marker 位置动态设置 top ---- */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-sidebar-item {
+    position: absolute;
+    width: 100%;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-confirm-view {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: var(--ck-color-base-background, #fff) !important;
+    z-index: 10;
+    border-radius: 2px;
+}
+
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-confirm-view-inner {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px;
+}
+
+/* ---- 无障碍提示文本 — 仅屏幕阅读器可见 ---- */
+vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-aria-description {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+}
+
+/* ===== Revision History（默认隐藏，CKEditor 切换时自动显示） ===== */
+vaadin-ckeditor.collaborative-editor .revision-history {
+    display: none;
+    border: 1px solid var(--ck-color-base-border, #ccced1);
+}
+
+vaadin-ckeditor.collaborative-editor .revision-history__wrapper {
+    display: flex;
+    height: var(--ck-editor-height, calc(100vh - 200px));
+}
+
+/* 版本历史编辑器区域 — 左侧，显示文档版本内容 */
+vaadin-ckeditor.collaborative-editor .revision-history__editor {
+    flex: 1;
+    overflow: hidden;
+}
+
+/* 版本历史侧栏 — 右侧，版本列表 */
+vaadin-ckeditor.collaborative-editor .revision-history__sidebar {
+    min-width: var(--ck-sidebar-width);
+    max-width: var(--ck-sidebar-width);
+    border-left: 1px solid var(--ck-color-base-border, #ccced1);
+    overflow-y: auto;
+    background: var(--ck-color-base-foreground, #fafafa);
+}
+
+/* 版本历史工具栏样式 — 匹配主编辑器工具栏 */
+vaadin-ckeditor.collaborative-editor .revision-history .ck.ck-toolbar {
+    box-shadow: 0 2px 3px hsla(0, 0%, 0%, 0.078);
+}
+
+/* 版本历史中的编辑器内容区 — A4 样式 */
+vaadin-ckeditor.collaborative-editor .revision-history .ck.ck-editor__editable {
+    border: 1px hsl(0, 0%, 82.7%) solid;
+    background: var(--ck-color-base-background, #fff);
+    box-shadow: 0 2px 3px hsla(0, 0%, 0%, 0.078);
+}
+
+/* 版本历史侧栏内部项 — 增强可读性 */
+vaadin-ckeditor.collaborative-editor .revision-history .ck-revision-history-sidebar__revision {
+    border-bottom: 1px solid var(--ck-color-base-border, #e8e8e8);
+}
+
+/* ===== Dark Theme Support ===== */
+/* 与 theme-manager.ts 保持一致：使用 @media (prefers-color-scheme: dark) 检测系统暗色主题
+   CKEditor CSS 变量（--ck-color-base-*）由 ThemeManager 在暗色模式下自动覆盖，
+   下方规则仅处理本文件中的非 CSS 变量硬编码颜色 */
+
+@media (prefers-color-scheme: dark) {
+    /* 评论标记 — 暗色高亮 */
+    vaadin-ckeditor.collaborative-editor .ck-content .ck-comment-marker {
+        background-color: hsla(54, 100%, 40%, 0.3) !important;
+        border-bottom-color: hsl(54, 80%, 40%) !important;
+    }
+
+    /* A4 编辑区 — 暗色纸张边框 */
+    vaadin-ckeditor.collaborative-editor .editor-container_document-editor .editor-container__editor .ck.ck-editor__editable {
+        border-color: hsl(0, 0%, 30%);
+    }
+
+    /* 在线用户头像光环 — 暗色边框适配 */
+    vaadin-ckeditor.collaborative-editor .presence-list-container .ck-presence-list__list-item .ck-user__name {
+        box-shadow: 0 0 0 2px var(--ck-color-base-foreground, hsl(270, 1%, 29%)), 0 0 0 4px hsl(142, 71%, 45%);
+    }
+
+    /* 在线指示圆点 — 暗色边框适配 */
+    vaadin-ckeditor.collaborative-editor .presence-list-container .ck-presence-list__marker {
+        border-color: var(--ck-color-base-foreground, hsl(270, 1%, 29%));
+    }
+
+    /* 批注卡片 — 暗色阴影与背景 */
+    vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck.ck-annotation-wrapper {
+        background: var(--ck-color-base-background, hsl(0, 0%, 18%));
+        box-shadow: 0 1px 1px 1px hsl(0, 0%, 12%);
+    }
+
+    vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck.ck-annotation-wrapper:hover {
+        box-shadow: 0 2px 4px 1px rgba(0, 0, 0, 0.35);
+    }
+
+    /* 激活卡片 — 暗色加深阴影 */
+    vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck.ck-annotation-wrapper--active {
+        box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.4);
+    }
+
+    /* 用户头像描边 — 暗色背景适配 */
+    vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation__user {
+        border-color: var(--ck-color-base-background, hsl(0, 0%, 18%));
+    }
+
+    vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-thread__user {
+        border-color: var(--ck-color-base-background, hsl(0, 0%, 18%));
+    }
+
+    /* 信息文本 — 暗色可读性 */
+    vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation__info-name,
+    vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-annotation__info-time {
+        color: hsl(0, 0%, 52%);
+    }
+
+    /* 回复区激活背景 — 暗色 */
+    vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-comment__input-container--active {
+        background: hsl(220, 15%, 22%);
+        border-left-color: hsl(54, 80%, 45%);
+    }
+
+    /* 按钮悬停 — 暗色 */
+    vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck.ck-button:hover {
+        background: var(--ck-color-button-default-hover-background, hsl(0, 0%, 25%));
+    }
+
+    /* Resolve 按钮 — 暗色绿色 */
+    vaadin-ckeditor.collaborative-editor .annotation-sidebar-container .ck-comment--resolve {
+        color: hsl(120, 80%, 35%) !important;
+    }
+
+    /* 版本历史编辑区 — 暗色边框 */
+    vaadin-ckeditor.collaborative-editor .revision-history .ck.ck-editor__editable {
+        border-color: hsl(0, 0%, 30%);
+    }
+}
+
+/* ===== Print Styles ===== */
+@media print {
+    body {
+        margin: 0 !important;
+    }
+
+    .annotation-sidebar-wrapper {
+        display: none !important;
+    }
+}
+
+/* ===== Responsive Adjustments ===== */
+@media (max-width: 900px) {
+    vaadin-ckeditor.collaborative-editor .annotation-sidebar-wrapper {
+        display: none !important;
+    }
+}
+
+@media (max-width: 900px) {
+    vaadin-ckeditor.collaborative-editor .editor-container_document-editor .editor-container__editor .ck.ck-editor__editable {
+        min-width: calc(180mm + 2px) !important;
+        max-width: calc(180mm + 2px) !important;
+        padding: 15mm 10mm !important;
+    }
+}
+
+@media (max-width: 700px) {
+    vaadin-ckeditor.collaborative-editor .editor-container__sidebar {
+        display: none !important;
+    }
+
+    vaadin-ckeditor.collaborative-editor .editor-container_document-editor .editor-container__editor .ck.ck-editor__editable {
+        min-width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 10mm 8mm !important;
+    }
+}
