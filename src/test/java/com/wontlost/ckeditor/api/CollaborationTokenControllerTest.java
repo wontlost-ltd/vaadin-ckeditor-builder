@@ -87,7 +87,7 @@ class CollaborationTokenControllerTest {
     class Configured {
 
         @Test
-        @DisplayName("认证用户获取有效 JWT，包含正确 claims 和权限")
+        @DisplayName("认证用户获取有效 JWT，包含正确 claims、权限和过期时间")
         void authenticatedUser_shouldReturnValidTokenWithExpectedClaims() {
             stubAuthentication("Alice", true);
 
@@ -107,6 +107,13 @@ class CollaborationTokenControllerTest {
             assertEquals("Alice", user.get("name"));
             assertEquals("user-alice@ckeditor-builder.local", user.get("email"));
 
+            // 验证 exp 存在且在未来 ~1 小时内
+            assertNotNull(claims.getExpiration(), "Token 必须包含 exp 过期时间");
+            long expiresInMs = claims.getExpiration().getTime() - System.currentTimeMillis();
+            assertTrue(expiresInMs > 3500_000 && expiresInMs <= 3600_000,
+                "Token 有效期应约为 1 小时，实际: " + expiresInMs + "ms");
+
+            // 细粒度权限（不含 comment:admin）
             List<?> permissions = extractPermissions(claims);
             assertEquals(4, permissions.size());
             assertTrue(permissions.containsAll(List.of(
@@ -156,6 +163,56 @@ class CollaborationTokenControllerTest {
 
             assertEquals(401, response.getStatusCode().value());
             assertEquals("Authentication required", response.getBody());
+        }
+
+        @Test
+        @DisplayName("预览 token 仅含只读协作权限，包含 AI 权限")
+        void previewToken_shouldHaveReadOnlyPermissionsAndAi() {
+            ResponseEntity<String> response = controller.getAiPreviewToken();
+
+            assertEquals(200, response.getStatusCode().value());
+            String token = response.getBody();
+            assertNotNull(token);
+
+            Claims claims = parseClaims(token);
+            assertEquals("user-preview", claims.getSubject());
+
+            // 仅含只读协作权限
+            List<?> permissions = extractPermissions(claims);
+            assertEquals(2, permissions.size());
+            assertTrue(permissions.containsAll(List.of("document:read", "comment:read")));
+            assertFalse(permissions.contains("document:write"));
+
+            // 包含 AI 权限（AI Chat 需要）
+            Map<?, ?> auth = claims.get("auth", Map.class);
+            assertNotNull(auth.get("ai"), "预览 token 应包含 AI 权限");
+            @SuppressWarnings("unchecked")
+            Map<String, ?> ai = (Map<String, ?>) auth.get("ai");
+            List<?> aiPermissions = (List<?>) ai.get("permissions");
+            assertTrue(aiPermissions.contains("ai:conversations:*"));
+            assertTrue(aiPermissions.contains("ai:models:*"));
+
+            // 有过期时间
+            assertNotNull(claims.getExpiration());
+        }
+
+        @Test
+        @DisplayName("认证 token 包含 AI 权限")
+        void authenticatedToken_shouldIncludeAiPermissions() {
+            stubAuthentication("Alice", true);
+
+            ResponseEntity<String> response = controller.getToken();
+
+            Claims claims = parseClaims(response.getBody());
+            Map<?, ?> auth = claims.get("auth", Map.class);
+            assertNotNull(auth.get("ai"), "认证 token 应包含 AI 权限");
+            @SuppressWarnings("unchecked")
+            Map<String, ?> ai = (Map<String, ?>) auth.get("ai");
+            List<?> aiPermissions = (List<?>) ai.get("permissions");
+            assertTrue(aiPermissions.contains("ai:conversations:*"));
+            assertTrue(aiPermissions.contains("ai:models:*"));
+            assertTrue(aiPermissions.contains("ai:actions:system:*"));
+            assertTrue(aiPermissions.contains("ai:reviews:system:*"));
         }
 
     }

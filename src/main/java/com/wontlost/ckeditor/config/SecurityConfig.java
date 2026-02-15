@@ -13,6 +13,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.util.UrlUtils;
 
 /**
  * Spring Security 配置
@@ -31,17 +33,36 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // token 端点需要认证（协作编辑器通过 beforeEnter 检查认证状态）
+        // API 端点认证：token 和 AI 代理均需认证（ai-token 匿名可访问，仅用于预览）
         http.authorizeHttpRequests(auth -> auth
-            .requestMatchers("/api/ckeditor/token").fullyAuthenticated()
+            .requestMatchers("/api/ckeditor/token", "/api/ai/proxy").fullyAuthenticated()
+            .requestMatchers("/api/ai/preview-proxy", "/api/ckeditor/ai-token").permitAll()
             .anyRequest().permitAll()
         );
 
-        // 配置表单登录 — 登录成功后始终跳转到协作编辑器
-        // alwaysUse=true 避免 saved request 指向 /api/ckeditor/token（该端点触发认证）
+        // 配置表单登录 — redirect 参数白名单校验，防止开放重定向
+        SimpleUrlAuthenticationSuccessHandler successHandler = new SimpleUrlAuthenticationSuccessHandler() {
+            private static final java.util.Set<String> ALLOWED_REDIRECTS = java.util.Set.of(
+                "/collaborative-document-editor",
+                "/ai-document-editor",
+                "/notion-document-editor",
+                "/admin"
+            );
+
+            @Override
+            protected String determineTargetUrl(jakarta.servlet.http.HttpServletRequest request,
+                                                jakarta.servlet.http.HttpServletResponse response) {
+                String redirect = request.getParameter("redirect");
+                if (redirect != null && ALLOWED_REDIRECTS.contains(redirect)) {
+                    return redirect;
+                }
+                return getDefaultTargetUrl();
+            }
+        };
+        successHandler.setDefaultTargetUrl("/collaborative-document-editor");
         http.formLogin(form -> form
             .loginPage("/login")
-            .defaultSuccessUrl("/collaborative-document-editor", true)
+            .successHandler(successHandler)
             .permitAll()
         );
 
