@@ -3097,6 +3097,42 @@
     max-width: 1400px;
 }
 
+/* ===== AI Document Preview Dialog ===== */
+.ai-document-preview-dialog {
+    --lumo-dialog-overlay-width: 95vw;
+    --lumo-dialog-overlay-height: 95vh;
+}
+
+/* AI 弹窗内容区：flex 列布局，让编辑器填满高度（直接用 class 选择器，避免 shadow DOM 穿透问题） */
+.ai-document-dialog-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    overflow: hidden;
+    padding: 0 !important;
+}
+
+/* 编辑器组件填满弹窗剩余空间 */
+.ai-document-dialog-content > vaadin-ckeditor.ai-editor {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    height: 100% !important;
+}
+
+/* 编辑器主容器填满 vaadin-ckeditor 高度（ai-document-editor.css 不在 wizard 上下文中加载） */
+.ai-document-dialog-content vaadin-ckeditor.ai-editor .editor-container {
+    height: 100% !important;
+}
+
+/* AI-active wrapper：使用弹窗剩余高度而非 100vh */
+.ai-document-dialog-content vaadin-ckeditor.ai-editor .editor-container_document-editor .editor-container__editor-wrapper {
+    max-height: none !important;
+    min-height: 0 !important;
+    flex: 1 1 0%;
+}
+
 /* Document Preview Thumbnail */
 .document-preview-thumbnail {
     transition: box-shadow 0.2s ease;

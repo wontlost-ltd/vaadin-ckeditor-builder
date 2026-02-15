@@ -31,6 +31,8 @@ import com.wontlost.ckeditor.views.wizard.steps.PluginsStep;
 import com.wontlost.ckeditor.views.wizard.steps.PreviewExportStep;
 import com.wontlost.ckeditor.views.wizard.steps.StyleLanguageStep;
 import com.wontlost.ckeditor.views.wizard.steps.ToolbarStep;
+import com.wontlost.ckeditor.config.AIProperties;
+import com.wontlost.ckeditor.config.CollaborationProperties;
 import com.wontlost.ckeditor.service.SubscriberService;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -63,10 +65,15 @@ public class WizardBuilderView extends VerticalLayout {
 
     // 服务
     private final SubscriberService subscriberService;
+    private final AIProperties aiProperties;
+    private final CollaborationProperties collaborationProperties;
 
     @Autowired
-    public WizardBuilderView(SubscriberService subscriberService) {
+    public WizardBuilderView(SubscriberService subscriberService, AIProperties aiProperties,
+                             CollaborationProperties collaborationProperties) {
         this.subscriberService = subscriberService;
+        this.aiProperties = aiProperties;
+        this.collaborationProperties = collaborationProperties;
         this.state = new BuilderState();
         this.steps = createSteps();
 
@@ -109,9 +116,11 @@ public class WizardBuilderView extends VerticalLayout {
         stepList.add(new ToolbarStep());          // Step 5: 工具栏配置
         stepList.add(new StyleLanguageStep());    // Step 6: 样式与语言
 
-        // Step 7: 预览与导出（注入订阅服务）
+        // Step 7: 预览与导出（注入订阅服务、AI 配置和协作配置）
         PreviewExportStep previewExportStep = new PreviewExportStep();
         previewExportStep.setSubscriberService(subscriberService);
+        previewExportStep.setAiProperties(aiProperties);
+        previewExportStep.setCollaborationProperties(collaborationProperties);
         stepList.add(previewExportStep);
 
         return stepList;

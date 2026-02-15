@@ -40,9 +40,7 @@ public class GettingStartedStep implements WizardStep {
     private final Map<String, Div> presetCards = new HashMap<>();
     private final Map<String, CKEditorPreset> cardPresetMap = new HashMap<>();
     // 暂不可用的预设卡片（Coming Soon）
-    private static final Set<String> DISABLED_CARD_IDS = Set.of(
-        "ai-document", "email", "notion"
-    );
+    private static final Set<String> DISABLED_CARD_IDS = Set.of();
     private String selectedCardId;
     private CKEditorPreset selectedPreset;
 
@@ -199,8 +197,8 @@ public class GettingStartedStep implements WizardStep {
             new String[]{"custom"},
             "~100KB"));
 
-        // 新增：AI-powered Document Editor (基于 FULL)
-        presetGrid.add(createPresetCardWithBadge(CKEditorPreset.FULL,
+        // 新增：AI-powered Document Editor
+        presetGrid.add(createPresetCardWithBadge(CKEditorPreset.AI_DOCUMENT,
             "AI Document",
             I18nUtil.get("preset.ai.desc"),
             new String[]{"✨", "heading", "image", "table", "ai"},
@@ -208,21 +206,21 @@ public class GettingStartedStep implements WizardStep {
             "ai-document",
             "AI"));
 
-        // 新增：Email Editor (基于 STANDARD)
-        presetGrid.add(createPresetCardWithBadge(CKEditorPreset.STANDARD,
+        // 新增：Email Editor
+        presetGrid.add(createPresetCardWithBadge(CKEditorPreset.EMAIL,
             "Email",
             I18nUtil.get("preset.email.desc"),
             new String[]{"bold", "italic", "link", "list", "image"},
-            "~500KB",
+            "Premium",
             "email",
             null));
 
-        // 新增：Notion-like Editor (基于 FULL)
-        presetGrid.add(createPresetCardWithBadge(CKEditorPreset.FULL,
+        // 新增：Notion-like Editor
+        presetGrid.add(createPresetCardWithBadge(CKEditorPreset.NOTION,
             "Notion-like",
             I18nUtil.get("preset.notion.desc"),
             new String[]{"/", "heading", "list", "toggle", "code"},
-            "~900KB",
+            "Premium",
             "notion",
             "New"));
 

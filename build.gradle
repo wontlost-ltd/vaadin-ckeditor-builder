@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.wontlost'
-version = '1.0.0'
+version = '5.1.0'
 description = 'Vaadin CKEditor Builder'
 
 java {
@@ -55,7 +55,7 @@ dependencies {
     implementation 'jakarta.xml.bind:jakarta.xml.bind-api'
 
     // VaadinCKEditor
-    implementation 'com.wontlost:ckeditor-vaadin:5.0.5'
+    implementation 'com.wontlost:ckeditor-vaadin:5.1.0'
 
     // Reactive Streams
     implementation 'org.reactivestreams:reactive-streams'

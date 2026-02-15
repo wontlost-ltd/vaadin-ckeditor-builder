@@ -1,3 +1,4 @@
 /* CKEditor Builder 主题样式 */
-/* 导入现有的 app.css */
-@import url('../../styles/views/app.css');
+/* app.css 已通过 MainView 的 @CssImport 注解全局加载，无需在此重复导入 */
+/* 主题 styles.css 由浏览器在运行时作为 <link> 加载，@import 会产生运行时 HTTP 请求，
+   而 Vaadin 生产模式不提供原始前端文件，导致 MIME type 错误 */

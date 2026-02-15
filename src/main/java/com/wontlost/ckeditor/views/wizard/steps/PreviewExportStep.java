@@ -26,6 +26,10 @@ import com.wontlost.ckeditor.CKEditorPreset;
 import com.wontlost.ckeditor.CKEditorType;
 import com.wontlost.ckeditor.CustomPlugin;
 import com.wontlost.ckeditor.VaadinCKEditor;
+import static com.wontlost.ckeditor.JsonUtil.createObjectNode;
+import static com.wontlost.ckeditor.JsonUtil.createArrayNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import com.wontlost.ckeditor.domain.BuilderState;
 import com.wontlost.ckeditor.domain.ValidationResult;
 import com.wontlost.ckeditor.domain.WizardStep;
@@ -75,7 +79,14 @@ public class PreviewExportStep implements WizardStep {
     private VaadinCKEditor currentEditor;
     private Dialog previewDialog;
     private Dialog collaborativePreviewDialog;
-    private Div dialogEditorContainer;
+    private Dialog aiDocumentPreviewDialog;
+    private Dialog emailPreviewDialog;
+    private Dialog notionPreviewDialog;
+    private Div dialogEditorContainer;        // Document 弹窗
+    private Div aiDocDialogEditorContainer;   // AI Document 弹窗
+    private Div aiDocDialogLoadingOverlay;    // AI Document 弹窗加载指示器
+    private Div emailDialogEditorContainer;   // Email 弹窗
+    // Notion 弹窗使用 iframe 模式（与 Collaborative 相同），无需 editorContainer
     private VaadinCKEditor dialogEditor;
     private final Map<BuilderState.ExportLanguage, Button> langButtons = new HashMap<>();
 
@@ -85,11 +96,31 @@ public class PreviewExportStep implements WizardStep {
     // 订阅服务（延迟注入）
     private SubscriberService subscriberService;
 
+    // AI 配置（延迟注入）
+    private com.wontlost.ckeditor.config.AIProperties aiProperties;
+
+    // 协作配置（延迟注入，AI 插件需要 cloudServices.tokenUrl）
+    private com.wontlost.ckeditor.config.CollaborationProperties collaborationProperties;
+
     /**
      * 设置订阅服务（用于依赖注入）
      */
     public void setSubscriberService(SubscriberService subscriberService) {
         this.subscriberService = subscriberService;
+    }
+
+    /**
+     * 设置 AI 配置（用于依赖注入）
+     */
+    public void setAiProperties(com.wontlost.ckeditor.config.AIProperties aiProperties) {
+        this.aiProperties = aiProperties;
+    }
+
+    /**
+     * 设置协作配置（AI 插件需要 cloudServices.tokenUrl）
+     */
+    public void setCollaborationProperties(com.wontlost.ckeditor.config.CollaborationProperties collaborationProperties) {
+        this.collaborationProperties = collaborationProperties;
     }
 
     @Override
@@ -318,6 +349,15 @@ public class PreviewExportStep implements WizardStep {
         } else if (state.getPreset() == CKEditorPreset.COLLABORATIVE) {
             // Collaborative 预设使用缩略图 + iframe 弹窗
             renderCollaborativeThumbnail();
+        } else if (state.getPreset() == CKEditorPreset.AI_DOCUMENT) {
+            // AI Document 预设使用缩略图 + 弹窗预览
+            renderAIDocumentThumbnail();
+        } else if (state.getPreset() == CKEditorPreset.EMAIL) {
+            // Email 预设使用缩略图 + 弹窗预览
+            renderEmailThumbnail();
+        } else if (state.getPreset() == CKEditorPreset.NOTION) {
+            // Notion 预设使用缩略图 + 弹窗预览
+            renderNotionThumbnail();
         } else {
             // 其他预设使用内嵌预览
             renderInlinePreview();
@@ -575,6 +615,1453 @@ public class PreviewExportStep implements WizardStep {
     private void renderCollaborativeThumbnail() {
         Div thumbnail = createCollaborativeThumbnail();
         editorContainer.add(thumbnail);
+    }
+
+    /**
+     * 渲染 AI Document 预设的缩略图预览（点击打开弹窗）
+     */
+    private void renderAIDocumentThumbnail() {
+        Div thumbnail = createAIDocumentThumbnail();
+        editorContainer.add(thumbnail);
+    }
+
+    /**
+     * 渲染 Email 预设的缩略图预览（点击打开弹窗）
+     */
+    private void renderEmailThumbnail() {
+        Div thumbnail = createEmailThumbnail();
+        editorContainer.add(thumbnail);
+    }
+
+    /**
+     * 构建 Email 编辑器
+     * 基于 CLASSIC 编辑器类型，启用 EMAIL 预设 + Email premium 插件
+     */
+    private VaadinCKEditor buildEmailEditor() {
+        var builder = VaadinCKEditor.create()
+            .withType(CKEditorType.CLASSIC)
+            .withPreset(CKEditorPreset.EMAIL)
+            .withTheme(state.getTheme())
+            .withLanguage(state.getLanguage())
+            .withWidth("795px")
+            .withValue(getEmailSampleContent());
+
+        // License Key（Email premium 插件需要）
+        if (state.hasLicenseKey()) {
+            builder.withLicenseKey(state.getLicenseKey());
+        }
+
+        // Email premium 插件
+        builder.addCustomPlugin(CustomPlugin.fromPremium("EmailConfigurationHelper"))
+            .addCustomPlugin(CustomPlugin.fromPremium("ExportInlineStyles"))
+            .addCustomPlugin(CustomPlugin.fromPremium("SourceEditingEnhanced"))
+            .addCustomPlugin(CustomPlugin.fromPremium("MergeFields"))
+            .addCustomPlugin(CustomPlugin.fromPremium("Template"))
+            .addCustomPlugin(CustomPlugin.fromPremium("PasteFromOfficeEnhanced"));
+
+        // 工具栏
+        builder.withToolbar(new String[] {
+            "undo", "redo", "|",
+            "insertMergeField", "previewMergeFields", "|",
+            "sourceEditingEnhanced", "|",
+            "heading", "style", "|",
+            "fontSize", "fontFamily", "fontColor", "fontBackgroundColor", "|",
+            "bold", "italic", "underline", "|",
+            "link", "insertImage", "insertTable", "insertTableLayout", "|",
+            "alignment", "|",
+            "bulletedList", "numberedList", "outdent", "indent"
+        });
+
+        // 配置
+        CKEditorConfig config = new CKEditorConfig();
+        config.setLanguage(state.getLanguage());
+        config.setPlaceholder(I18nUtil.get("step7.preview.placeholder"));
+
+        // menuBar 可见
+        ObjectNode menuBarNode = createObjectNode();
+        menuBarNode.put("isVisible", true);
+        config.set("menuBar", menuBarNode);
+
+        // Merge Fields 定义（分组 + 数据集 + 预览模式）
+        config.set("mergeFields", buildMergeFieldsConfig());
+
+        builder.withConfig(config);
+
+        VaadinCKEditor editor = builder.build();
+
+        // 自定义 CSS
+        applyCustomCss(editor);
+
+        return editor;
+    }
+
+    /**
+     * 构建 Merge Fields 配置
+     * 定义字段分组、默认值和预览数据集，来源：CKEditor 5 官方 Email 预设
+     */
+    private ObjectNode buildMergeFieldsConfig() {
+        ObjectNode mergeFields = createObjectNode();
+
+        // --- definitions ---
+        ArrayNode definitions = createArrayNode();
+
+        // 订阅者信息组
+        ObjectNode subscriberGroup = createObjectNode();
+        subscriberGroup.put("groupId", "subscriber");
+        subscriberGroup.put("groupLabel", "Subscriber");
+        ArrayNode subscriberDefs = createArrayNode();
+        subscriberDefs.add(mergeFieldDef("subscriberName", "Subscriber name", "Subscriber"));
+        subscriberDefs.add(mergeFieldDef("subscriberEmail", "Email address", "user@example.com"));
+        subscriberGroup.set("definitions", subscriberDefs);
+        definitions.add(subscriberGroup);
+
+        // 网站信息组
+        ObjectNode siteGroup = createObjectNode();
+        siteGroup.put("groupId", "site");
+        siteGroup.put("groupLabel", "Site info");
+        ArrayNode siteDefs = createArrayNode();
+        siteDefs.add(mergeFieldDef("siteName", "Site name", "wontlost.com"));
+        siteDefs.add(mergeFieldDef("siteUrl", "Site URL", "https://wontlost.com"));
+        siteGroup.set("definitions", siteDefs);
+        definitions.add(siteGroup);
+
+        mergeFields.set("definitions", definitions);
+
+        // --- dataSets（预览数据）---
+        ArrayNode dataSets = createArrayNode();
+        ObjectNode sampleData = createObjectNode();
+        sampleData.put("id", "sample1");
+        sampleData.put("label", "Sample subscriber");
+        ObjectNode values = createObjectNode();
+        values.put("subscriberName", "John Doe");
+        values.put("subscriberEmail", "john.doe@example.com");
+        values.put("siteName", "wontlost.com");
+        values.put("siteUrl", "https://wontlost.com");
+        sampleData.set("values", values);
+        dataSets.add(sampleData);
+        mergeFields.set("dataSets", dataSets);
+
+        // --- previewModes ---
+        ArrayNode previewModes = createArrayNode();
+        previewModes.add("$labels");
+        previewModes.add("$defaultValues");
+        previewModes.add("$dataSets");
+        mergeFields.set("previewModes", previewModes);
+
+        // --- prefix / suffix ---
+        mergeFields.put("prefix", "{{");
+        mergeFields.put("suffix", "}}");
+
+        return mergeFields;
+    }
+
+    /**
+     * 创建单个 Merge Field 定义
+     */
+    private ObjectNode mergeFieldDef(String id, String label, String defaultValue) {
+        ObjectNode def = createObjectNode();
+        def.put("id", id);
+        def.put("label", label);
+        def.put("defaultValue", defaultValue);
+        return def;
+    }
+
+    /**
+     * Email 预设示例内容（wontlost.com 订阅感谢邮件）
+     */
+    private String getEmailSampleContent() {
+        return "<table class=\"table layout-table\" role=\"presentation\"><tbody>" +
+            // 间距
+            "<tr><td style=\"height:30px;\">&nbsp;</td></tr>" +
+            // Thank You GIF
+            "<tr><td style=\"text-align:center;\">" +
+            "<a href=\"https://wontlost.com\">" +
+            "<img class=\"image_resized\" style=\"aspect-ratio:498/373;width:60%;\" " +
+            "src=\"https://i0.wp.com/bestgrafix.com/wp-content/uploads/2025/07/Lovely-Thank-You-gif.gif\" " +
+            "width=\"498\" height=\"373\"></a></td></tr>" +
+            "<tr><td style=\"height:30px;\">&nbsp;</td></tr>" +
+            // 标题
+            "<tr><td style=\"text-align:center;\">" +
+            "<h1 style=\"border-bottom-style:none;color:#333333;font-size:32px;margin:0;padding:0;\">" +
+            "<strong>Welcome to {{siteName}}!</strong></h1></td></tr>" +
+            "<tr><td style=\"height:20px;\">&nbsp;</td></tr>" +
+            // 问候语（含 Merge Field）
+            "<tr><td style=\"text-align:center;\">" +
+            "<h2 style=\"border-bottom-style:none;color:#555555;font-size:22px;font-weight:400;margin:0;padding:0;\">" +
+            "Hi {{subscriberName}},</h2></td></tr>" +
+            "<tr><td style=\"height:10px;\">&nbsp;</td></tr>" +
+            // 正文
+            "<tr><td style=\"text-align:center;padding:0 40px;\">" +
+            "<p style=\"color:#555555;margin:0;line-height:1.6;\">Thank you for subscribing! " +
+            "You'll now receive updates about our latest Vaadin components, CKEditor integrations, " +
+            "and open-source projects.</p></td></tr>" +
+            "<tr><td style=\"height:30px;\">&nbsp;</td></tr>" +
+            // CTA 按钮
+            "<tr><td style=\"text-align:center;\">" +
+            "<a class=\"button button--green\" href=\"https://wontlost.com\">Visit {{siteName}}</a></td></tr>" +
+            "<tr><td style=\"height:40px;\">&nbsp;</td></tr>" +
+            // 深色页脚
+            "<tr><td style=\"background-color:#1a1a2e;height:20px;\">&nbsp;</td></tr>" +
+            "<tr><td style=\"background-color:#1a1a2e;padding:12px;text-align:center;\">" +
+            "<p style=\"color:#cccccc;margin:0;font-size:13px;\">You're receiving this because {{subscriberEmail}} " +
+            "subscribed to {{siteName}}.</p>" +
+            "<p style=\"color:#cccccc;margin:4px 0 0;font-size:13px;\">" +
+            "<a style=\"color:#8888ff;\" href=\"#\">Unsubscribe</a> | " +
+            "<a style=\"color:#8888ff;\" href=\"{{siteUrl}}\">{{siteName}}</a></p></td></tr>" +
+            "<tr><td style=\"background-color:#1a1a2e;height:20px;\">&nbsp;</td></tr>" +
+            "</tbody></table>";
+    }
+
+    /**
+     * 渲染 Notion 预设的缩略图预览
+     * Notion 需要 BalloonEditor + blockToolbar + 协作插件，使用缩略图展示
+     */
+    private void renderNotionThumbnail() {
+        Div thumbnail = createNotionThumbnail();
+        editorContainer.add(thumbnail);
+    }
+
+    /**
+     * 创建 Notion-like 预览缩略图（点击打开弹窗）
+     * 参照 CKEditor 5 官方 Notion-like 预设：无顶部菜单/工具栏，
+     * 有 blockToolbar（六点按钮）在块左侧，有协作侧栏
+     */
+    private Div createNotionThumbnail() {
+        Div thumbnail = new Div();
+        thumbnail.addClassName("notion-preview-thumbnail");
+        thumbnail.getStyle()
+            .set("position", "absolute")
+            .set("top", "0")
+            .set("left", "0")
+            .set("right", "0")
+            .set("bottom", "0")
+            .set("width", "100%")
+            .set("height", "100%")
+            .set("min-height", "0")
+            .set("border", "1px solid var(--lumo-contrast-20pct)")
+            .set("border-radius", "12px")
+            .set("background", "var(--lumo-base-color)")
+            .set("cursor", "pointer")
+            .set("display", "flex")
+            .set("flex-direction", "column")
+            .set("overflow", "hidden")
+            .set("transition", "box-shadow 0.2s");
+
+        // 顶部窄条：在线用户头像（无菜单、无工具栏）
+        Div presenceBar = new Div();
+        presenceBar.getStyle()
+            .set("height", "32px")
+            .set("min-height", "32px")
+            .set("background", "var(--lumo-contrast-5pct)")
+            .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("justify-content", "flex-end")
+            .set("padding", "0 12px")
+            .set("gap", "4px");
+
+        // 用户头像
+        String[] avatarColors = {"#4CAF50", "#2196F3"};
+        String[] avatarLabels = {"A", "B"};
+        for (int i = 0; i < 2; i++) {
+            Div avatar = new Div();
+            avatar.getStyle()
+                .set("width", "22px")
+                .set("height", "22px")
+                .set("border-radius", "50%")
+                .set("background", avatarColors[i])
+                .set("color", "white")
+                .set("font-size", "11px")
+                .set("font-weight", "600")
+                .set("display", "flex")
+                .set("align-items", "center")
+                .set("justify-content", "center");
+            avatar.setText(avatarLabels[i]);
+            presenceBar.add(avatar);
+        }
+
+        // 主内容区域（文档 + 侧栏）
+        Div mainArea = new Div();
+        mainArea.getStyle()
+            .set("flex", "1")
+            .set("min-height", "0")
+            .set("display", "flex")
+            .set("overflow", "hidden")
+            .set("background", "var(--lumo-contrast-5pct)");
+
+        // 文档内容区（带 blockToolbar 六点按钮）
+        Div content = new Div();
+        content.getStyle()
+            .set("flex", "1")
+            .set("min-height", "0")
+            .set("padding", "20px 40px 20px 20px")
+            .set("display", "flex")
+            .set("flex-direction", "column")
+            .set("gap", "3px")
+            .set("overflow", "hidden")
+            .set("background", "var(--lumo-base-color)")
+            .set("margin", "12px")
+            .set("border-radius", "4px")
+            .set("box-shadow", "0 1px 4px rgba(0, 0, 0, 0.06)");
+
+        // Title 区域（大标题）
+        Div titleLine = new Div();
+        titleLine.getStyle()
+            .set("height", "20px")
+            .set("width", "55%")
+            .set("margin-bottom", "12px")
+            .set("margin-left", "28px")
+            .set("border-radius", "3px")
+            .set("background", "var(--lumo-contrast-25pct)");
+        content.add(titleLine);
+
+        // 模拟块级内容（每行左侧有六点 blockToolbar 按钮）
+        int[] blockTypes = {0, 1, 1, 2, 1, 3, 1, 4, 5, 1};
+        // 0=H2, 1=paragraph, 2=image, 3=H3, 4=todoList, 5=blockquote
+        int[] widths = {50, 95, 80, 100, 90, 35, 85, 0, 0, 70};
+
+        for (int i = 0; i < blockTypes.length; i++) {
+            Div blockRow = new Div();
+            blockRow.getStyle()
+                .set("display", "flex")
+                .set("align-items", "center")
+                .set("gap", "6px")
+                .set("padding", "1px 0");
+
+            // 六点 blockToolbar 按钮（仅 hover 行显示）
+            Div dragHandle = new Div();
+            dragHandle.getStyle()
+                .set("width", "20px")
+                .set("min-width", "20px")
+                .set("height", "20px")
+                .set("display", "flex")
+                .set("align-items", "center")
+                .set("justify-content", "center")
+                .set("font-size", "14px")
+                .set("color", "var(--lumo-contrast-30pct)")
+                .set("opacity", i == 1 ? "1" : "0.15");
+            dragHandle.setText("\u2630"); // 三线汉堡图标模拟六点
+            blockRow.add(dragHandle);
+
+            int type = blockTypes[i];
+            if (type == 0) {
+                // H2 标题
+                Div h2 = new Div();
+                h2.getStyle()
+                    .set("height", "12px")
+                    .set("width", widths[i] + "%")
+                    .set("border-radius", "2px")
+                    .set("background", "var(--lumo-contrast-20pct)");
+                blockRow.add(h2);
+            } else if (type == 1) {
+                // 普通段落
+                Div para = new Div();
+                para.getStyle()
+                    .set("height", "5px")
+                    .set("width", widths[i] + "%")
+                    .set("border-radius", "2px")
+                    .set("background", "var(--lumo-contrast-10pct)");
+                blockRow.add(para);
+            } else if (type == 2) {
+                // 图片占位
+                Div img = new Div();
+                img.getStyle()
+                    .set("height", "50px")
+                    .set("width", "100%")
+                    .set("border-radius", "4px")
+                    .set("background", "var(--lumo-contrast-8pct)")
+                    .set("border", "1px solid var(--lumo-contrast-10pct)")
+                    .set("display", "flex")
+                    .set("align-items", "center")
+                    .set("justify-content", "center");
+                Icon imgIcon = VaadinIcon.PICTURE.create();
+                imgIcon.setSize("16px");
+                imgIcon.getStyle().set("color", "var(--lumo-contrast-20pct)");
+                img.add(imgIcon);
+                blockRow.add(img);
+            } else if (type == 3) {
+                // H3 标题
+                Div h3 = new Div();
+                h3.getStyle()
+                    .set("height", "10px")
+                    .set("width", widths[i] + "%")
+                    .set("border-radius", "2px")
+                    .set("background", "var(--lumo-contrast-18pct)");
+                blockRow.add(h3);
+            } else if (type == 4) {
+                // Todo list
+                Div todoRow = new Div();
+                todoRow.getStyle()
+                    .set("display", "flex")
+                    .set("align-items", "center")
+                    .set("gap", "5px");
+                Div checkbox = new Div();
+                checkbox.getStyle()
+                    .set("width", "12px")
+                    .set("height", "12px")
+                    .set("min-width", "12px")
+                    .set("border", "2px solid var(--lumo-contrast-30pct)")
+                    .set("border-radius", "3px");
+                Div todoText = new Div();
+                todoText.getStyle()
+                    .set("height", "5px")
+                    .set("width", "100px")
+                    .set("border-radius", "2px")
+                    .set("background", "var(--lumo-contrast-10pct)");
+                todoRow.add(checkbox, todoText);
+                blockRow.add(todoRow);
+            } else if (type == 5) {
+                // Blockquote
+                Div quote = new Div();
+                quote.getStyle()
+                    .set("height", "20px")
+                    .set("width", "80%")
+                    .set("border-left", "3px solid var(--lumo-contrast-20pct)")
+                    .set("padding-left", "8px")
+                    .set("display", "flex")
+                    .set("align-items", "center");
+                Div quoteText = new Div();
+                quoteText.getStyle()
+                    .set("height", "5px")
+                    .set("width", "90%")
+                    .set("border-radius", "2px")
+                    .set("background", "var(--lumo-contrast-10pct)");
+                quote.add(quoteText);
+                blockRow.add(quote);
+            }
+
+            content.add(blockRow);
+        }
+        mainArea.add(content);
+
+        // 右侧协作侧栏
+        Div sidebar = new Div();
+        sidebar.getStyle()
+            .set("width", "130px")
+            .set("min-width", "130px")
+            .set("padding", "16px 8px")
+            .set("display", "flex")
+            .set("flex-direction", "column")
+            .set("gap", "8px");
+
+        // 模拟协作评论
+        String[] commentColors = {"#4CAF50", "#2196F3"};
+        String[] commentAuthors = {"Alice", "Bob"};
+        for (int i = 0; i < 2; i++) {
+            Div commentBox = new Div();
+            commentBox.getStyle()
+                .set("background", "var(--lumo-contrast-5pct)")
+                .set("border", "1px solid var(--lumo-contrast-10pct)")
+                .set("border-radius", "6px")
+                .set("padding", "8px")
+                .set("border-left", "3px solid " + commentColors[i]);
+
+            Span author = new Span(commentAuthors[i]);
+            author.getStyle()
+                .set("font-size", "9px")
+                .set("font-weight", "600")
+                .set("color", commentColors[i])
+                .set("display", "block")
+                .set("margin-bottom", "4px");
+            commentBox.add(author);
+
+            for (int j = 0; j < 2; j++) {
+                Div textLine = new Div();
+                textLine.getStyle()
+                    .set("height", "4px")
+                    .set("margin-bottom", "3px")
+                    .set("border-radius", "2px")
+                    .set("background", "var(--lumo-contrast-10pct)")
+                    .set("width", (j == 0 ? 80 : 60) + "%");
+                commentBox.add(textLine);
+            }
+            sidebar.add(commentBox);
+        }
+        mainArea.add(sidebar);
+
+        // Premium 标签
+        Div premiumBanner = new Div();
+        premiumBanner.getStyle()
+            .set("height", "32px")
+            .set("min-height", "32px")
+            .set("background", "linear-gradient(135deg, var(--lumo-contrast-5pct), var(--lumo-contrast-10pct))")
+            .set("border-top", "1px solid var(--lumo-contrast-10pct)")
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("justify-content", "center")
+            .set("gap", "6px");
+
+        Span premiumLabel = new Span("Premium — Requires CKEditor License for collaboration features");
+        premiumLabel.getStyle()
+            .set("font-size", "10px")
+            .set("color", "var(--lumo-secondary-text-color)");
+        premiumBanner.add(premiumLabel);
+
+        // 点击提示覆盖层
+        Div hintOverlay = createClickHintOverlay(I18nUtil.get("step7.preview.notionClickToPreview"));
+
+        // 使用相对定位的容器
+        Div container = new Div();
+        container.getStyle()
+            .set("width", "100%")
+            .set("height", "100%")
+            .set("min-height", "0")
+            .set("position", "relative")
+            .set("display", "flex")
+            .set("flex-direction", "column");
+        container.add(presenceBar, mainArea, premiumBanner, hintOverlay);
+
+        thumbnail.add(container);
+        thumbnail.addClickListener(e -> openNotionPreviewDialog());
+        applyThumbnailHoverEffect(thumbnail);
+
+        return thumbnail;
+    }
+
+    /**
+     * 创建 AI Document 预览缩略图（DECOUPLED 编辑器 + AI 侧栏）
+     */
+    private Div createAIDocumentThumbnail() {
+        Div thumbnail = new Div();
+        thumbnail.addClassName("ai-document-preview-thumbnail");
+        thumbnail.getStyle()
+            .set("width", "100%")
+            .set("height", "100%")
+            .set("min-height", "0")
+            .set("border", "1px solid var(--lumo-contrast-20pct)")
+            .set("border-radius", "12px")
+            .set("background", "var(--lumo-base-color)")
+            .set("cursor", "pointer")
+            .set("display", "flex")
+            .set("flex-direction", "column")
+            .set("overflow", "hidden")
+            .set("transition", "box-shadow 0.2s");
+
+        // 模拟菜单栏
+        Div menuBar = createThumbnailMenuBar();
+
+        // 模拟工具栏（AI 特有：toggleAi、aiQuickActions）
+        Div toolbar = new Div();
+        toolbar.getStyle()
+            .set("height", "36px")
+            .set("min-height", "36px")
+            .set("background", "var(--lumo-contrast-5pct)")
+            .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("padding", "0 8px")
+            .set("gap", "2px")
+            .set("flex-wrap", "nowrap")
+            .set("overflow", "hidden");
+
+        toolbar.add(createToolbarIconButton(VaadinIcon.ARROW_BACKWARD));
+        toolbar.add(createToolbarIconButton(VaadinIcon.ARROW_FORWARD));
+        toolbar.add(createToolbarSeparator());
+
+        // AI 按钮（紫色高亮）
+        Div aiBtn = new Div();
+        aiBtn.getStyle()
+            .set("width", "28px")
+            .set("height", "28px")
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("justify-content", "center")
+            .set("border-radius", "4px")
+            .set("background", "rgba(147, 51, 234, 0.1)");
+        Icon aiIcon = VaadinIcon.MAGIC.create();
+        aiIcon.setSize("16px");
+        aiIcon.getStyle().set("color", "#9333ea");
+        aiBtn.add(aiIcon);
+        toolbar.add(aiBtn);
+        toolbar.add(createToolbarSeparator());
+
+        toolbar.add(createToolbarIconButton(VaadinIcon.SEARCH));
+        toolbar.add(createToolbarIconButton(VaadinIcon.EXPAND_SQUARE));
+        toolbar.add(createToolbarSeparator());
+        toolbar.add(createToolbarIconButton(VaadinIcon.BOLD));
+        toolbar.add(createToolbarIconButton(VaadinIcon.ITALIC));
+        toolbar.add(createToolbarIconButton(VaadinIcon.UNDERLINE));
+        toolbar.add(createToolbarSeparator());
+        toolbar.add(createToolbarIconButton(VaadinIcon.LINK));
+        toolbar.add(createToolbarIconButton(VaadinIcon.PICTURE));
+        toolbar.add(createToolbarIconButton(VaadinIcon.TABLE));
+
+        // 三栏布局：大纲 | 文档 | AI 侧栏
+        Div content = new Div();
+        content.getStyle()
+            .set("flex", "1")
+            .set("min-height", "0")
+            .set("padding", "16px")
+            .set("display", "flex")
+            .set("gap", "12px")
+            .set("background", "var(--lumo-contrast-5pct)")
+            .set("overflow", "hidden");
+
+        // 左侧：文档大纲
+        if (state.isDocumentOutlineEnabled()) {
+            Div outline = new Div();
+            outline.getStyle()
+                .set("width", "100px")
+                .set("min-width", "100px")
+                .set("background", "var(--lumo-base-color)")
+                .set("border-radius", "4px")
+                .set("padding", "10px")
+                .set("border", "1px solid var(--lumo-contrast-10pct)");
+            Span outlineTitle = new Span(I18nUtil.get("step7.preview.documentOutline"));
+            outlineTitle.getStyle()
+                .set("font-size", "10px")
+                .set("font-weight", "600")
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("display", "block")
+                .set("margin-bottom", "8px");
+            outline.add(outlineTitle);
+            for (int i = 0; i < 4; i++) {
+                Div item = new Div();
+                item.getStyle()
+                    .set("height", "7px")
+                    .set("margin-bottom", "5px")
+                    .set("border-radius", "2px")
+                    .set("background", "var(--lumo-contrast-10pct)")
+                    .set("margin-left", i % 2 == 1 ? "10px" : "0")
+                    .set("width", i % 2 == 1 ? "65%" : "85%");
+                outline.add(item);
+            }
+            content.add(outline);
+        }
+
+        // 中间：文档内容（A4 样式）
+        Div docWrapper = new Div();
+        docWrapper.getStyle()
+            .set("flex", "1")
+            .set("display", "flex")
+            .set("justify-content", "center")
+            .set("overflow", "hidden");
+        Div docContent = new Div();
+        docContent.getStyle()
+            .set("width", "100%")
+            .set("max-width", "280px")
+            .set("background", "white")
+            .set("border", "1px solid var(--lumo-contrast-10pct)")
+            .set("border-radius", "2px")
+            .set("padding", "20px 16px")
+            .set("box-shadow", "0 2px 8px rgba(0, 0, 0, 0.08)");
+        Div titleLine = new Div();
+        titleLine.getStyle()
+            .set("height", "12px").set("width", "70%")
+            .set("margin-bottom", "12px").set("border-radius", "2px")
+            .set("background", "var(--lumo-contrast-20pct)");
+        docContent.add(titleLine);
+        for (int i = 0; i < 10; i++) {
+            Div line = new Div();
+            line.getStyle()
+                .set("height", "6px").set("margin-bottom", "6px")
+                .set("border-radius", "2px").set("background", "var(--lumo-contrast-10pct)");
+            if (i == 3) line.getStyle().set("width", "85%");
+            else if (i == 5) line.getStyle().set("height", "10px").set("width", "50%")
+                .set("margin-top", "8px").set("background", "var(--lumo-contrast-15pct)");
+            else line.getStyle().set("width", "100%");
+            docContent.add(line);
+        }
+        docWrapper.add(docContent);
+        content.add(docWrapper);
+
+        // 右侧：AI Chat 侧栏
+        Div aiSidebar = new Div();
+        aiSidebar.getStyle()
+            .set("width", "140px")
+            .set("min-width", "140px")
+            .set("background", "var(--lumo-base-color)")
+            .set("border-radius", "4px")
+            .set("padding", "10px")
+            .set("border", "1px solid var(--lumo-contrast-10pct)")
+            .set("display", "flex")
+            .set("flex-direction", "column")
+            .set("gap", "8px");
+
+        // AI Chat 标题
+        Div aiHeader = new Div();
+        aiHeader.getStyle()
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("gap", "6px")
+            .set("padding-bottom", "8px")
+            .set("border-bottom", "1px solid var(--lumo-contrast-10pct)");
+        Icon aiHeaderIcon = VaadinIcon.MAGIC.create();
+        aiHeaderIcon.setSize("14px");
+        aiHeaderIcon.getStyle().set("color", "#9333ea");
+        Span aiTitle = new Span("AI Chat");
+        aiTitle.getStyle()
+            .set("font-size", "11px")
+            .set("font-weight", "600")
+            .set("color", "var(--lumo-secondary-text-color)");
+        aiHeader.add(aiHeaderIcon, aiTitle);
+        aiSidebar.add(aiHeader);
+
+        // 模拟 AI 对话气泡
+        for (int i = 0; i < 3; i++) {
+            Div bubble = new Div();
+            bubble.getStyle()
+                .set("padding", "6px 8px")
+                .set("border-radius", "6px")
+                .set("background", i % 2 == 0
+                    ? "var(--lumo-contrast-5pct)"
+                    : "rgba(147, 51, 234, 0.08)");
+            if (i % 2 == 1) {
+                bubble.getStyle().set("align-self", "flex-end").set("max-width", "90%");
+            }
+            for (int j = 0; j < 2; j++) {
+                Div textLine = new Div();
+                textLine.getStyle()
+                    .set("height", "4px").set("margin-bottom", "3px")
+                    .set("border-radius", "2px")
+                    .set("background", i % 2 == 0
+                        ? "var(--lumo-contrast-10pct)"
+                        : "rgba(147, 51, 234, 0.15)")
+                    .set("width", (j == 0 ? 85 : 60) + "%");
+                bubble.add(textLine);
+            }
+            aiSidebar.add(bubble);
+        }
+
+        // 模拟输入框
+        Div inputBox = new Div();
+        inputBox.getStyle()
+            .set("margin-top", "auto")
+            .set("height", "24px")
+            .set("border", "1px solid var(--lumo-contrast-15pct)")
+            .set("border-radius", "4px")
+            .set("background", "var(--lumo-contrast-5pct)");
+        aiSidebar.add(inputBox);
+
+        content.add(aiSidebar);
+
+        // 点击提示覆盖层
+        Div hintOverlay = createClickHintOverlay(I18nUtil.get("step7.preview.aiDocumentClickToPreview"));
+
+        Div container = new Div();
+        container.getStyle()
+            .set("width", "100%").set("height", "100%")
+            .set("min-height", "0").set("position", "relative")
+            .set("display", "flex").set("flex-direction", "column");
+        container.add(menuBar, toolbar, content, hintOverlay);
+
+        thumbnail.add(container);
+        thumbnail.addClickListener(e -> openAIDocumentPreviewDialog());
+        applyThumbnailHoverEffect(thumbnail);
+
+        return thumbnail;
+    }
+
+    /**
+     * 创建 Email 预览缩略图（CLASSIC 编辑器 + Email 特有功能）
+     */
+    private Div createEmailThumbnail() {
+        Div thumbnail = new Div();
+        thumbnail.addClassName("email-preview-thumbnail");
+        thumbnail.getStyle()
+            .set("width", "100%")
+            .set("height", "100%")
+            .set("min-height", "0")
+            .set("border", "1px solid var(--lumo-contrast-20pct)")
+            .set("border-radius", "12px")
+            .set("background", "var(--lumo-base-color)")
+            .set("cursor", "pointer")
+            .set("display", "flex")
+            .set("flex-direction", "column")
+            .set("overflow", "hidden")
+            .set("transition", "box-shadow 0.2s");
+
+        // 模拟菜单栏
+        Div menuBar = createThumbnailMenuBar();
+
+        // 模拟工具栏（Email 特有：mergeField、sourceEditingEnhanced）
+        Div toolbar = new Div();
+        toolbar.getStyle()
+            .set("height", "36px")
+            .set("min-height", "36px")
+            .set("background", "var(--lumo-contrast-5pct)")
+            .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("padding", "0 8px")
+            .set("gap", "2px")
+            .set("flex-wrap", "nowrap")
+            .set("overflow", "hidden");
+
+        toolbar.add(createToolbarIconButton(VaadinIcon.ARROW_BACKWARD));
+        toolbar.add(createToolbarIconButton(VaadinIcon.ARROW_FORWARD));
+        toolbar.add(createToolbarSeparator());
+
+        // Merge Fields 按钮（蓝色高亮）
+        Div mergeBtn = new Div();
+        mergeBtn.getStyle()
+            .set("height", "22px")
+            .set("padding", "0 8px")
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("border-radius", "4px")
+            .set("background", "rgba(59, 130, 246, 0.1)")
+            .set("gap", "4px");
+        Span mergeLabel = new Span("Merge");
+        mergeLabel.getStyle()
+            .set("font-size", "10px")
+            .set("color", "#3b82f6")
+            .set("font-weight", "600");
+        mergeBtn.add(mergeLabel);
+        toolbar.add(mergeBtn);
+        toolbar.add(createToolbarSeparator());
+
+        // Source editing 按钮
+        toolbar.add(createToolbarIconButton(VaadinIcon.CODE));
+        toolbar.add(createToolbarSeparator());
+
+        toolbar.add(createToolbarIconButton(VaadinIcon.TEXT_LABEL));
+        toolbar.add(createToolbarSeparator());
+        toolbar.add(createToolbarIconButton(VaadinIcon.BOLD));
+        toolbar.add(createToolbarIconButton(VaadinIcon.ITALIC));
+        toolbar.add(createToolbarIconButton(VaadinIcon.UNDERLINE));
+        toolbar.add(createToolbarSeparator());
+        toolbar.add(createToolbarIconButton(VaadinIcon.LINK));
+        toolbar.add(createToolbarIconButton(VaadinIcon.PICTURE));
+        toolbar.add(createToolbarIconButton(VaadinIcon.TABLE));
+
+        // 模拟邮件内容区域
+        Div content = new Div();
+        content.getStyle()
+            .set("flex", "1")
+            .set("min-height", "0")
+            .set("padding", "24px 40px")
+            .set("display", "flex")
+            .set("flex-direction", "column")
+            .set("gap", "8px")
+            .set("overflow", "hidden");
+
+        // 邮件标题
+        Div emailTitle = new Div();
+        emailTitle.getStyle()
+            .set("height", "14px")
+            .set("width", "50%")
+            .set("margin-bottom", "8px")
+            .set("border-radius", "3px")
+            .set("background", "var(--lumo-contrast-25pct)");
+        content.add(emailTitle);
+
+        // 模拟邮件段落
+        for (int i = 0; i < 3; i++) {
+            Div line = new Div();
+            line.getStyle()
+                .set("height", "6px")
+                .set("border-radius", "2px")
+                .set("background", "var(--lumo-contrast-10pct)")
+                .set("width", (90 - i * 5) + "%");
+            content.add(line);
+        }
+
+        // 模拟 Merge Field 占位符（{{name}} 样式）
+        Div mergeFieldRow = new Div();
+        mergeFieldRow.getStyle()
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("gap", "6px")
+            .set("margin", "4px 0");
+        Div textBefore = new Div();
+        textBefore.getStyle()
+            .set("height", "6px").set("width", "60px")
+            .set("border-radius", "2px").set("background", "var(--lumo-contrast-10pct)");
+        Div mergeField = new Div();
+        mergeField.getStyle()
+            .set("height", "18px")
+            .set("padding", "0 8px")
+            .set("border-radius", "4px")
+            .set("background", "rgba(59, 130, 246, 0.1)")
+            .set("border", "1px solid rgba(59, 130, 246, 0.3)")
+            .set("display", "flex")
+            .set("align-items", "center");
+        Span mergeText = new Span("{{name}}");
+        mergeText.getStyle()
+            .set("font-size", "9px")
+            .set("color", "#3b82f6")
+            .set("font-family", "monospace");
+        mergeField.add(mergeText);
+        Div textAfter = new Div();
+        textAfter.getStyle()
+            .set("height", "6px").set("width", "100px")
+            .set("border-radius", "2px").set("background", "var(--lumo-contrast-10pct)");
+        mergeFieldRow.add(textBefore, mergeField, textAfter);
+        content.add(mergeFieldRow);
+
+        // 模拟表格布局
+        Div tableArea = new Div();
+        tableArea.getStyle()
+            .set("margin-top", "8px")
+            .set("border", "1px solid var(--lumo-contrast-15pct)")
+            .set("border-radius", "4px")
+            .set("padding", "8px")
+            .set("display", "grid")
+            .set("grid-template-columns", "1fr 1fr")
+            .set("gap", "4px");
+        for (int i = 0; i < 4; i++) {
+            Div cell = new Div();
+            cell.getStyle()
+                .set("height", "12px")
+                .set("border-radius", "2px")
+                .set("background", i < 2
+                    ? "var(--lumo-contrast-8pct)"
+                    : "var(--lumo-contrast-5pct)");
+            tableArea.add(cell);
+        }
+        content.add(tableArea);
+
+        // 更多段落行
+        for (int i = 0; i < 2; i++) {
+            Div line = new Div();
+            line.getStyle()
+                .set("height", "6px").set("border-radius", "2px")
+                .set("background", "var(--lumo-contrast-10pct)")
+                .set("width", (85 + i * 5) + "%");
+            content.add(line);
+        }
+
+        // Premium 标签
+        Div premiumBanner = new Div();
+        premiumBanner.getStyle()
+            .set("height", "32px")
+            .set("min-height", "32px")
+            .set("background", "linear-gradient(135deg, var(--lumo-contrast-5pct), var(--lumo-contrast-10pct))")
+            .set("border-top", "1px solid var(--lumo-contrast-10pct)")
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("justify-content", "center")
+            .set("gap", "6px");
+        Span premiumLabel = new Span("Premium — Merge Fields, Source Editing Enhanced, Inline Styles");
+        premiumLabel.getStyle()
+            .set("font-size", "10px")
+            .set("color", "var(--lumo-secondary-text-color)");
+        premiumBanner.add(premiumLabel);
+
+        // 点击提示覆盖层
+        Div hintOverlay = createClickHintOverlay(I18nUtil.get("step7.preview.emailClickToPreview"));
+
+        Div container = new Div();
+        container.getStyle()
+            .set("width", "100%").set("height", "100%")
+            .set("min-height", "0").set("position", "relative")
+            .set("display", "flex").set("flex-direction", "column");
+        container.add(menuBar, toolbar, content, premiumBanner, hintOverlay);
+
+        thumbnail.add(container);
+        thumbnail.addClickListener(e -> openEmailPreviewDialog());
+        applyThumbnailHoverEffect(thumbnail);
+
+        return thumbnail;
+    }
+
+    /**
+     * 创建缩略图菜单栏（共享组件）
+     */
+    private Div createThumbnailMenuBar() {
+        Div menuBar = new Div();
+        menuBar.getStyle()
+            .set("height", "28px")
+            .set("min-height", "28px")
+            .set("background", "var(--lumo-contrast-5pct)")
+            .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("padding", "0 12px")
+            .set("gap", "16px");
+        String[] menuKeys = {"file", "edit", "view", "insert", "format", "tools", "help"};
+        for (String key : menuKeys) {
+            Span menuItem = new Span(I18nUtil.get("step7.preview.menu." + key));
+            menuItem.getStyle()
+                .set("font-size", "11px")
+                .set("color", "var(--lumo-secondary-text-color)");
+            menuBar.add(menuItem);
+        }
+        return menuBar;
+    }
+
+    /**
+     * 创建点击提示覆盖层（共享组件）
+     */
+    private Div createClickHintOverlay(String hintText) {
+        Div hintOverlay = new Div();
+        hintOverlay.getStyle()
+            .set("position", "absolute")
+            .set("top", "0").set("left", "0").set("right", "0").set("bottom", "0")
+            .set("display", "flex")
+            .set("flex-direction", "column")
+            .set("align-items", "center")
+            .set("justify-content", "center")
+            .set("background", "rgba(0, 0, 0, 0)")
+            .set("transition", "background 0.2s");
+
+        Div hintBox = new Div();
+        hintBox.getStyle()
+            .set("background", "var(--lumo-base-color)")
+            .set("padding", "12px 20px")
+            .set("border-radius", "8px")
+            .set("box-shadow", "0 4px 12px rgba(0, 0, 0, 0.15)")
+            .set("display", "flex")
+            .set("align-items", "center")
+            .set("gap", "8px")
+            .set("opacity", "0")
+            .set("transform", "translateY(10px)")
+            .set("transition", "all 0.2s");
+
+        Icon expandIcon = VaadinIcon.EXPAND_FULL.create();
+        expandIcon.setSize("18px");
+        expandIcon.getStyle().set("color", "var(--lumo-primary-color)");
+
+        Span hint = new Span(hintText);
+        hint.getStyle()
+            .set("font-size", "14px")
+            .set("font-weight", "500")
+            .set("color", "var(--lumo-body-text-color)");
+
+        hintBox.add(expandIcon, hint);
+        hintOverlay.add(hintBox);
+        return hintOverlay;
+    }
+
+    /**
+     * 应用缩略图悬停效果（共享逻辑）
+     */
+    private void applyThumbnailHoverEffect(Div thumbnail) {
+        thumbnail.getElement().executeJs(
+            "this.addEventListener('mouseenter', () => {" +
+            "  this.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';" +
+            "  this.querySelector('[style*=\"rgba(0, 0, 0, 0)\"]').style.background = 'rgba(0, 0, 0, 0.3)';" +
+            "  this.querySelector('[style*=\"opacity: 0\"]').style.opacity = '1';" +
+            "  this.querySelector('[style*=\"translateY(10px)\"]').style.transform = 'translateY(0)';" +
+            "});" +
+            "this.addEventListener('mouseleave', () => {" +
+            "  this.style.boxShadow = 'none';" +
+            "  const overlay = this.querySelector('[style*=\"background: rgba\"]');" +
+            "  if (overlay) overlay.style.background = 'rgba(0, 0, 0, 0)';" +
+            "  const box = this.querySelectorAll('div')[this.querySelectorAll('div').length - 2];" +
+            "  if (box) { box.style.opacity = '0'; box.style.transform = 'translateY(10px)'; }" +
+            "});"
+        );
+    }
+
+    /**
+     * 打开 AI Document 预览弹窗
+     */
+    private void openAIDocumentPreviewDialog() {
+        ensureAIDocumentPreviewDialog();
+        aiDocumentPreviewDialog.open();
+        applyDialogGlassEffect("ai-document-preview-dialog");
+
+        // 延迟创建编辑器
+        UI.getCurrent().getPage().executeJs(
+            "return new Promise(resolve => setTimeout(resolve, 150));"
+        ).then(result -> updateAIDocumentDialogPreview());
+    }
+
+    /**
+     * 确保 AI Document 预览弹窗已创建
+     */
+    private void ensureAIDocumentPreviewDialog() {
+        if (aiDocumentPreviewDialog != null) return;
+
+        aiDocumentPreviewDialog = new Dialog();
+        aiDocumentPreviewDialog.setWidth("95vw");
+        aiDocumentPreviewDialog.setHeight("95vh");
+        aiDocumentPreviewDialog.setCloseOnEsc(true);
+        aiDocumentPreviewDialog.setCloseOnOutsideClick(true);
+        aiDocumentPreviewDialog.addClassName("ai-document-preview-dialog");
+        aiDocumentPreviewDialog.setHeaderTitle(I18nUtil.get("step7.preview.aiDocumentDialogTitle"));
+
+        aiDocumentPreviewDialog.addOpenedChangeListener(event -> {
+            if (!event.isOpened()) cleanupDialogEditor(aiDocDialogEditorContainer);
+        });
+
+        Button closeBtn = new Button(VaadinIcon.CLOSE.create(), e -> aiDocumentPreviewDialog.close());
+        closeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ICON);
+        aiDocumentPreviewDialog.getHeader().add(closeBtn);
+
+        // 加载指示器 — 编辑器初始化完成前显示
+        aiDocDialogLoadingOverlay = createDialogLoadingOverlay(
+            I18nUtil.get("step7.preview.aiDocumentLoading"));
+
+        aiDocDialogEditorContainer = new Div();
+        aiDocDialogEditorContainer.setSizeFull();
+        aiDocDialogEditorContainer.addClassName("ai-document-dialog-content");
+
+        aiDocDialogEditorContainer.add(aiDocDialogLoadingOverlay);
+        aiDocumentPreviewDialog.add(aiDocDialogEditorContainer);
+
+        // 注入 @keyframes spin 动画规则（仅弹窗作用域内需要）
+        aiDocumentPreviewDialog.getElement().executeJs(
+            "if (!document.getElementById('ck-dialog-spinner-keyframes')) {" +
+            "  const style = document.createElement('style');" +
+            "  style.id = 'ck-dialog-spinner-keyframes';" +
+            "  style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';" +
+            "  document.head.appendChild(style);" +
+            "}"
+        );
+    }
+
+    /**
+     * 更新 AI Document 弹窗内的编辑器
+     */
+    private void updateAIDocumentDialogPreview() {
+        if (aiDocDialogEditorContainer == null) return;
+        cleanupDialogEditor(aiDocDialogEditorContainer);
+
+        // 显示加载指示器
+        if (aiDocDialogLoadingOverlay != null) {
+            aiDocDialogLoadingOverlay.getStyle().set("display", "flex");
+            aiDocDialogEditorContainer.add(aiDocDialogLoadingOverlay);
+        }
+
+        try {
+            dialogEditor = buildAIDocumentEditor();
+            dialogEditor.setSizeFull();
+            dialogEditor.addClassName("document-editor");
+            dialogEditor.getStyle().set("visibility", "hidden");
+
+            // 编辑器就绪后隐藏加载指示器、显示编辑器
+            dialogEditor.addEditorReadyListener(ev -> {
+                if (aiDocDialogLoadingOverlay != null) {
+                    aiDocDialogLoadingOverlay.getStyle().set("display", "none");
+                }
+                dialogEditor.getStyle().remove("visibility");
+            });
+
+            aiDocDialogEditorContainer.add(dialogEditor);
+        } catch (Exception e) {
+            if (aiDocDialogLoadingOverlay != null) {
+                aiDocDialogLoadingOverlay.getStyle().set("display", "none");
+            }
+            Div errorMsg = new Div();
+            errorMsg.addClassName("preview-error");
+            errorMsg.setText(I18nUtil.get("step7.preview.error", e.getMessage()));
+            aiDocDialogEditorContainer.add(errorMsg);
+        }
+    }
+
+    /**
+     * 打开 Email 预览弹窗
+     */
+    private void openEmailPreviewDialog() {
+        ensureEmailPreviewDialog();
+        emailPreviewDialog.open();
+        applyDialogGlassEffect("email-preview-dialog");
+
+        UI.getCurrent().getPage().executeJs(
+            "return new Promise(resolve => setTimeout(resolve, 150));"
+        ).then(result -> updateEmailDialogPreview());
+    }
+
+    /**
+     * 确保 Email 预览弹窗已创建
+     */
+    private void ensureEmailPreviewDialog() {
+        if (emailPreviewDialog != null) return;
+
+        emailPreviewDialog = new Dialog();
+        emailPreviewDialog.setWidth("95vw");
+        emailPreviewDialog.setHeight("95vh");
+        emailPreviewDialog.setCloseOnEsc(true);
+        emailPreviewDialog.setCloseOnOutsideClick(true);
+        emailPreviewDialog.addClassName("email-preview-dialog");
+        emailPreviewDialog.setHeaderTitle(I18nUtil.get("step7.preview.emailDialogTitle"));
+
+        emailPreviewDialog.addOpenedChangeListener(event -> {
+            if (!event.isOpened()) cleanupDialogEditor(emailDialogEditorContainer);
+        });
+
+        Button closeBtn = new Button(VaadinIcon.CLOSE.create(), e -> emailPreviewDialog.close());
+        closeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ICON);
+        emailPreviewDialog.getHeader().add(closeBtn);
+
+        emailDialogEditorContainer = new Div();
+        emailDialogEditorContainer.setSizeFull();
+        emailDialogEditorContainer.addClassName("document-preview-dialog-content");
+        emailDialogEditorContainer.getStyle()
+            .set("padding", "16px")
+            .set("box-sizing", "border-box")
+            .set("display", "flex")
+            .set("justify-content", "center")
+            .set("align-items", "flex-start");
+
+        emailPreviewDialog.add(emailDialogEditorContainer);
+    }
+
+    /**
+     * 更新 Email 弹窗内的编辑器
+     */
+    private void updateEmailDialogPreview() {
+        if (emailDialogEditorContainer == null) return;
+        cleanupDialogEditor(emailDialogEditorContainer);
+
+        try {
+            dialogEditor = buildEmailEditor();
+            // 保持 795px 宽度，高度填满弹窗
+            dialogEditor.setHeight("100%");
+            emailDialogEditorContainer.add(dialogEditor);
+        } catch (Exception e) {
+            Div errorMsg = new Div();
+            errorMsg.addClassName("preview-error");
+            errorMsg.setText(I18nUtil.get("step7.preview.error", e.getMessage()));
+            emailDialogEditorContainer.add(errorMsg);
+        }
+    }
+
+    /**
+     * 打开 Notion-like 预览弹窗（iframe 加载 /notion-document-editor，需要登录）
+     * Notion 预设使用 BALLOON 编辑器 + blockToolbar + balloonToolbar，无固定顶部工具栏和菜单栏
+     */
+    private void openNotionPreviewDialog() {
+        ensureNotionPreviewDialog();
+        notionPreviewDialog.open();
+        applyDialogGlassEffect("notion-preview-dialog");
+    }
+
+    /**
+     * 确保 Notion 预览弹窗已创建（iframe 加载独立的 /notion-document-editor 页面）
+     */
+    private void ensureNotionPreviewDialog() {
+        if (notionPreviewDialog != null) return;
+
+        notionPreviewDialog = new Dialog();
+        notionPreviewDialog.setWidth("95vw");
+        notionPreviewDialog.setHeight("95vh");
+        notionPreviewDialog.setCloseOnEsc(true);
+        notionPreviewDialog.setCloseOnOutsideClick(true);
+        notionPreviewDialog.addClassName("notion-preview-dialog");
+        notionPreviewDialog.setHeaderTitle(I18nUtil.get("step7.preview.notionDialogTitle"));
+
+        Button closeBtn = new Button(VaadinIcon.CLOSE.create(), e -> notionPreviewDialog.close());
+        closeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ICON);
+        notionPreviewDialog.getHeader().add(closeBtn);
+
+        // iframe 加载 Notion 风格编辑器页面（BALLOON + blockToolbar，需要登录）
+        IFrame iframe = new IFrame("/notion-document-editor");
+        iframe.setSizeFull();
+        iframe.getElement().getStyle()
+            .set("border", "none")
+            .set("border-radius", "8px");
+
+        Div iframeContainer = new Div(iframe);
+        iframeContainer.setSizeFull();
+        iframeContainer.getStyle()
+            .set("padding", "0")
+            .set("box-sizing", "border-box");
+
+        notionPreviewDialog.add(iframeContainer);
+    }
+
+    /**
+     * 应用弹窗毛玻璃效果（共享逻辑）
+     */
+    /**
+     * 创建弹窗内加载指示器（居中旋转动画 + 提示文字）
+     */
+    private Div createDialogLoadingOverlay(String message) {
+        Div spinner = new Div();
+        spinner.getStyle()
+            .set("width", "40px")
+            .set("height", "40px")
+            .set("border", "3px solid var(--lumo-contrast-10pct)")
+            .set("border-top-color", "var(--lumo-primary-color)")
+            .set("border-radius", "50%")
+            .set("animation", "spin 0.8s linear infinite");
+
+        Span text = new Span(message);
+        text.getStyle()
+            .set("color", "var(--lumo-secondary-text-color)")
+            .set("font-size", "14px")
+            .set("margin-top", "16px");
+
+        Div overlay = new Div(spinner, text);
+        overlay.getStyle()
+            .set("position", "absolute")
+            .set("inset", "0")
+            .set("display", "flex")
+            .set("flex-direction", "column")
+            .set("align-items", "center")
+            .set("justify-content", "center")
+            .set("background", "var(--lumo-base-color)")
+            .set("z-index", "10");
+
+        return overlay;
+    }
+
+    private void applyDialogGlassEffect(String dialogClassName) {
+        UI.getCurrent().getPage().executeJs(
+            "setTimeout(() => {" +
+            "  const dialog = document.querySelector('vaadin-dialog." + dialogClassName + "');" +
+            "  if (!dialog || !dialog.shadowRoot) return;" +
+            "  const overlay = dialog.shadowRoot.querySelector('vaadin-dialog-overlay');" +
+            "  if (!overlay || !overlay.shadowRoot) return;" +
+            "  const backdrop = overlay.shadowRoot.querySelector('[part=\"backdrop\"]');" +
+            "  if (backdrop) {" +
+            "    backdrop.style.backdropFilter = 'blur(4px)';" +
+            "    backdrop.style.webkitBackdropFilter = 'blur(4px)';" +
+            "    backdrop.style.background = 'rgba(0, 0, 0, 0.5)';" +
+            "  }" +
+            "  const header = overlay.shadowRoot.querySelector('[part=\"header\"]');" +
+            "  if (header) header.style.justifyContent = 'center';" +
+            "  const title = overlay.shadowRoot.querySelector('[part=\"title\"]');" +
+            "  if (title) { title.style.textAlign = 'center'; title.style.flex = '1'; }" +
+            "}, 100);"
+        );
+    }
+
+    /**
+     * 构建 AI Document 编辑器
+     * 基于 DECOUPLED 编辑器类型，启用 AI_DOCUMENT 预设 + 模块化 AI 插件（v47.5.0）
+     */
+    private VaadinCKEditor buildAIDocumentEditor() {
+        var builder = VaadinCKEditor.create()
+            .withType(CKEditorType.DECOUPLED)
+            .withPreset(CKEditorPreset.AI_DOCUMENT)
+            .withTheme(state.getTheme())
+            .withLanguage(state.getLanguage())
+            .withWidth("100%")
+            .withValue("<h2>AI Document Editor Preview</h2>" +
+                "<p>This is a preview of the AI-powered Document Editor.</p>" +
+                "<h3>AI Assistant Features</h3>" +
+                "<p>Use the AI chat sidebar or select text and use Quick Actions " +
+                "to rewrite, summarize, expand, or translate your content.</p>" +
+                "<h3>Getting Started</h3>" +
+                "<p>Try selecting some text and clicking the AI button, " +
+                "or use the AI Chat panel in the toolbar to generate content.</p>" +
+                "<h3>Section 1: Introduction</h3>" +
+                "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. " +
+                "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>" +
+                "<h3>Section 2: Details</h3>" +
+                "<p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris " +
+                "nisi ut aliquip ex ea commodo consequat.</p>");
+
+        // License Key（AI 插件需要 Premium license）
+        if (state.hasLicenseKey()) {
+            builder.withLicenseKey(state.getLicenseKey());
+        }
+
+        // Document 增强插件
+        if (state.hasLicenseKey() && state.isDocumentOutlineEnabled()) {
+            builder.addCustomPlugin(CustomPlugin.fromPremium("DocumentOutline"));
+        }
+        if (state.isMinimapEnabled()) {
+            builder.addPlugin(CKEditorPlugin.MINIMAP);
+        }
+
+        // AI 插件（v47.5.0 模块化）
+        builder.addCustomPlugin(CustomPlugin.fromPremium("AIChat"))
+            .addCustomPlugin(CustomPlugin.fromPremium("AIEditorIntegration"))
+            .addCustomPlugin(CustomPlugin.fromPremium("AIQuickActions"))
+            .addCustomPlugin(CustomPlugin.fromPremium("AIReviewMode"))
+            .addCustomPlugin(CustomPlugin.fromPremium("AITranslate"));
+
+        // 额外 premium 插件（对齐 v47.5.0 sample）
+        builder.addCustomPlugin(CustomPlugin.fromPremium("FormatPainter"))
+            .addCustomPlugin(CustomPlugin.fromPremium("PasteFromOfficeEnhanced"))
+            .addCustomPlugin(CustomPlugin.fromPremium("SlashCommand"))
+            .addCustomPlugin(CustomPlugin.fromPremium("LineHeight"));
+
+        // 工具栏（v47.5.0 新 AI toolbar items）
+        builder.withToolbar(new String[] {
+            "undo", "redo", "|",
+            "toggleAi", "aiQuickActions", "|",
+            "formatPainter", "findAndReplace", "fullscreen", "|",
+            "heading", "|",
+            "fontSize", "fontFamily", "fontColor", "fontBackgroundColor", "|",
+            "bold", "italic", "underline", "strikethrough",
+            "subscript", "superscript", "code", "removeFormat", "|",
+            "emoji", "specialCharacters", "horizontalLine",
+            "link", "bookmark", "insertImage", "mediaEmbed",
+            "insertTable", "blockQuote", "codeBlock", "|",
+            "alignment", "lineHeight", "|",
+            "bulletedList", "numberedList", "todoList",
+            "outdent", "indent"
+        });
+
+        // 配置
+        CKEditorConfig config = new CKEditorConfig();
+        config.setLanguage(state.getLanguage());
+        config.setPlaceholder(I18nUtil.get("step7.preview.placeholder"));
+
+        // AI 配置（v47.5.0 sidebar container 模式）
+        ObjectNode containerNode = createObjectNode();
+        containerNode.put("type", "sidebar");
+        containerNode.put("showResizeButton", false);
+
+        ObjectNode documentCtx = createObjectNode();
+        documentCtx.put("enabled", true);
+        ObjectNode urlsCtx = createObjectNode();
+        urlsCtx.put("enabled", true);
+        ObjectNode filesCtx = createObjectNode();
+        filesCtx.put("enabled", true);
+
+        ObjectNode contextNode = createObjectNode();
+        contextNode.set("document", documentCtx);
+        contextNode.set("urls", urlsCtx);
+        contextNode.set("files", filesCtx);
+
+        ObjectNode chatNode = createObjectNode();
+        chatNode.set("context", contextNode);
+
+        // OpenAI-compatible API 配置
+        // CKEditor Cloud Services 作为中间层调用此 URL（服务端代理）
+        ObjectNode openAINode = createObjectNode();
+        openAINode.put("apiUrl", aiProperties != null ? aiProperties.getApiUrl()
+            : "https://api.openai.com/v1/chat/completions");
+        openAINode.put("model", aiProperties != null ? aiProperties.getModel() : "grok-4.1");
+        ObjectNode requestHeadersNode = createObjectNode();
+        requestHeadersNode.put("Content-Type", "application/json");
+        openAINode.set("requestHeaders", requestHeadersNode);
+
+        ObjectNode aiNode = createObjectNode();
+        aiNode.set("container", containerNode);
+        aiNode.set("chat", chatNode);
+        aiNode.set("openAI", openAINode);
+
+        config.set("ai", aiNode);
+
+        // Cloud Services — AI 插件初始化要求 tokenUrl
+        if (collaborationProperties != null && collaborationProperties.isConfigured()) {
+            ObjectNode cloudServicesNode = createObjectNode();
+            cloudServicesNode.put("tokenUrl", "/api/ckeditor/ai-token");
+            config.set("cloudServices", cloudServicesNode);
+
+            ObjectNode collaborationNode = createObjectNode();
+            collaborationNode.put("channelId", "ai-document-preview");
+            config.set("collaboration", collaborationNode);
+        }
+
+        // menuBar 可见
+        ObjectNode menuBarNode = createObjectNode();
+        menuBarNode.put("isVisible", true);
+        config.set("menuBar", menuBarNode);
+
+        builder.withConfig(config);
+
+        VaadinCKEditor editor = builder.build();
+
+        // ai-editor class — 触发 ai-document-editor.css 中的样式覆盖
+        // （540px 侧栏、static 定位、margin:0 等，对齐原生 CKEditor Builder）
+        editor.addClassName("ai-editor");
+
+        // AI 侧栏容器（AI Chat sidebar 模式需要 DOM 元素）
+        editor.setAiSidebarEnabled(true);
+
+        // Document 选项
+        if (state.isDocumentOutlineEnabled() && state.hasLicenseKey()) {
+            editor.getElement().setProperty("documentOutlineEnabled", true);
+        }
+        if (state.isMinimapEnabled()) {
+            editor.getElement().setProperty("minimapEnabled", true);
+            editor.getElement().setProperty("allowConfigRequiredPlugins", true);
+        }
+
+        // 自定义 CSS
+        applyCustomCss(editor);
+
+        return editor;
     }
 
     /**
@@ -1394,8 +2881,14 @@ public class PreviewExportStep implements WizardStep {
      * 清理弹窗中的编辑器（正确销毁以避免内存泄漏）
      */
     private void cleanupDialogEditor() {
+        cleanupDialogEditor(dialogEditorContainer);
+    }
+
+    /**
+     * 清理指定容器中的弹窗编辑器
+     */
+    private void cleanupDialogEditor(Div container) {
         if (dialogEditor != null) {
-            // 先调用 destroy 方法销毁 CKEditor 实例
             dialogEditor.getElement().executeJs(
                 "if (this.editor && typeof this.editor.destroy === 'function') {" +
                 "  this.editor.destroy().catch(err => console.warn('Editor destroy error:', err));" +
@@ -1403,8 +2896,8 @@ public class PreviewExportStep implements WizardStep {
             );
             dialogEditor = null;
         }
-        if (dialogEditorContainer != null) {
-            dialogEditorContainer.removeAll();
+        if (container != null) {
+            container.removeAll();
         }
     }
 
@@ -1838,6 +3331,21 @@ public class PreviewExportStep implements WizardStep {
         // 清理协作预览弹窗
         if (collaborativePreviewDialog != null && collaborativePreviewDialog.isOpened()) {
             collaborativePreviewDialog.close();
+        }
+
+        // 清理 AI Document 预览弹窗
+        if (aiDocumentPreviewDialog != null && aiDocumentPreviewDialog.isOpened()) {
+            aiDocumentPreviewDialog.close();
+        }
+
+        // 清理 Email 预览弹窗
+        if (emailPreviewDialog != null && emailPreviewDialog.isOpened()) {
+            emailPreviewDialog.close();
+        }
+
+        // 清理 Notion 预览弹窗
+        if (notionPreviewDialog != null && notionPreviewDialog.isOpened()) {
+            notionPreviewDialog.close();
         }
     }
 

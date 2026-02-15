@@ -282,7 +282,7 @@ public class CollaborativeDocumentEditorView extends VerticalLayout implements B
      */
     private void showLoginForm() {
         LoginForm loginForm = new LoginForm();
-        loginForm.setAction("login");
+        loginForm.setAction("login?redirect=/collaborative-document-editor");
         loginForm.setForgotPasswordButtonVisible(false);
 
         Span description = new Span(I18nUtil.get("collab.login.description"));
@@ -403,7 +403,7 @@ public class CollaborativeDocumentEditorView extends VerticalLayout implements B
 
         // collaboration 配置 — channelId 用于标识协作文档
         ObjectNode collaborationNode = createObjectNode();
-        collaborationNode.put("channelId", "collab-services-agreement-v2");
+        collaborationNode.put("channelId", "collab-services-agreement-v3");
         config.set("collaboration", collaborationNode);
 
         // initialData — 首次创建 channel 时的初始文档内容

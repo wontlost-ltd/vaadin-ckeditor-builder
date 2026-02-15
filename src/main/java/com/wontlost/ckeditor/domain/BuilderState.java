@@ -358,6 +358,14 @@ public class BuilderState implements Serializable {
         this.selectedPlugins.addAll(preset.getPlugins());
         this.toolbarItems.clear();
         this.toolbarItems.addAll(Arrays.asList(preset.getDefaultToolbar()));
+
+        // 根据预设设置编辑器类型
+        this.editorType = switch (preset) {
+            case DOCUMENT, AI_DOCUMENT, COLLABORATIVE -> CKEditorType.DECOUPLED;
+            case NOTION -> CKEditorType.BALLOON;
+            default -> CKEditorType.CLASSIC;
+        };
+
         notifyListeners();
     }
 
