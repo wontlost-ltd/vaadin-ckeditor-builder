@@ -1,0 +1,565 @@
+/**
+ * Notion-like Document Editor Styles
+ *
+ * Balloon 编辑器 + BlockToolbar 布局。
+ * 无固定工具栏、无菜单栏，块级工具栏在段落左侧，浮动工具栏在选中文本时弹出。
+ *
+ * 结构：
+ *   .editor-container                    — 编辑器主容器
+ *     .editor-container__editor-wrapper  — flex 容器（编辑器 + 批注侧栏）
+ *       .editor-container__editor        — 编辑区域
+ *       .annotation-sidebar-wrapper      — 批注区域（在线用户 + 批注）
+ *         .presence-list-container       — 在线用户列表
+ *         .annotation-sidebar-container  — 批注侧栏
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+/* ===== CSS Variables（scoped to Notion editor） ===== */
+.notion-document-editor-view {
+    --ck-content-font-family: 'Lato', sans-serif;
+    --ck-sidebar-width: 270px;
+}
+
+/* ===== View Container ===== */
+.notion-document-editor-view {
+    font-family: var(--ck-content-font-family);
+}
+
+/* ===== Loading Overlay ===== */
+.loading-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    padding: 40px;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--lumo-contrast-10pct);
+    border-top-color: var(--lumo-primary-color);
+    border-radius: 50%;
+    animation: notion-spin 0.8s linear infinite;
+}
+
+@keyframes notion-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== Editor Wrapper ===== */
+.notion-editor-container {
+    font-family: var(--ck-content-font-family);
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+/* ===== Editor Component ===== */
+vaadin-ckeditor.notion-editor {
+    display: block;
+    width: 100%;
+}
+
+vaadin-ckeditor.notion-editor .editor-container {
+    font-family: var(--ck-content-font-family);
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* ===== Editor Wrapper（编辑器 + 批注侧栏） ===== */
+vaadin-ckeditor.notion-editor .editor-container__editor-wrapper {
+    display: flex;
+    width: 100%;
+    max-height: calc(100vh - 80px);
+    min-height: calc(100vh - 80px);
+    overflow-y: auto;
+    background: var(--ck-color-base-foreground, #fafafa);
+}
+
+/* ===== Editor Area — Notion 风格宽编辑区 ===== */
+vaadin-ckeditor.notion-editor .editor-container__editor {
+    flex: 1;
+    max-width: 800px;
+    margin: 24px auto;
+    padding: 0 48px 0 56px; /* 左边多留空间给 blockToolbar 按钮 */
+}
+
+vaadin-ckeditor.notion-editor .editor-container__editor .ck.ck-editor__editable {
+    box-sizing: border-box;
+    min-height: calc(100vh - 160px);
+    padding: 24px 32px;
+    border: none !important;
+    background: var(--ck-color-base-background, #fff);
+    font-size: 16px;
+    line-height: 1.6;
+    box-shadow: none !important;
+}
+
+/* Notion 风格 — 聚焦时无蓝色边框，但保留 outline 供键盘导航可见 */
+vaadin-ckeditor.notion-editor .ck.ck-editor__editable.ck-focused {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Balloon 编辑器容器无边框 */
+vaadin-ckeditor.notion-editor .editor-container_balloon-editor {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* ===== Block Toolbar Button — 6 点图标 ===== */
+vaadin-ckeditor.notion-editor .ck.ck-block-toolbar-button {
+    color: var(--ck-color-text, hsl(0, 0%, 50%));
+    transition: color 0.2s ease;
+}
+
+vaadin-ckeditor.notion-editor .ck.ck-block-toolbar-button:hover {
+    color: var(--ck-color-text, hsl(0, 0%, 30%));
+    background: var(--ck-color-button-default-hover-background, hsl(0, 0%, 96%));
+    border-radius: 4px;
+}
+
+/* ===== Annotation Sidebar Wrapper ===== */
+vaadin-ckeditor.notion-editor .annotation-sidebar-wrapper {
+    flex-direction: column;
+    min-width: var(--ck-sidebar-width);
+    max-width: var(--ck-sidebar-width);
+    margin-top: 24px;
+    margin-left: 10px;
+    margin-right: 10px;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    max-height: calc(100vh - 120px);
+    overflow: hidden;
+}
+
+/* ===== Presence List ===== */
+vaadin-ckeditor.notion-editor .presence-list-container {
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    margin-top: 10px;
+}
+
+vaadin-ckeditor.notion-editor .presence-list-container .ck.ck-presence-list {
+    gap: 0;
+}
+
+vaadin-ckeditor.notion-editor .presence-list-container .ck-presence-list__list {
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+vaadin-ckeditor.notion-editor .presence-list-container .ck-presence-list__list-item {
+    border: none !important;
+    background: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: relative;
+}
+
+vaadin-ckeditor.notion-editor .presence-list-container .ck-presence-list__list-item > .ck-label {
+    display: none !important;
+}
+
+vaadin-ckeditor.notion-editor .presence-list-container .ck-user {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+}
+
+vaadin-ckeditor.notion-editor .presence-list-container .ck-user__img {
+    display: none !important;
+}
+
+vaadin-ckeditor.notion-editor .presence-list-container .ck-user__name {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ck-color-base-background, #fff);
+    background: hsl(0, 0%, 65%);
+    line-height: 1;
+    overflow: hidden;
+    box-shadow: 0 0 0 2px var(--ck-color-base-foreground, #fafafa), 0 0 0 4px hsl(142, 71%, 45%);
+}
+
+vaadin-ckeditor.notion-editor .presence-list-container .ck-presence-list__marker {
+    display: block !important;
+    width: 5px !important;
+    height: 5px !important;
+    border-radius: 50%;
+    border: 2px solid var(--ck-color-base-foreground, #fafafa);
+    position: absolute !important;
+    bottom: -2px;
+    right: -2px;
+    margin: 0 !important;
+    background-color: hsl(142, 71%, 45%) !important;
+}
+
+/* ===== Comment Marker ===== */
+vaadin-ckeditor.notion-editor .ck-content .ck-comment-marker {
+    background-color: hsla(54, 100%, 62%, 0.4) !important;
+    border-bottom: 2px solid hsl(54, 100%, 48%) !important;
+}
+
+/* ===== Annotation Sidebar ===== */
+vaadin-ckeditor.notion-editor .annotation-sidebar-container {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+    overflow: visible;
+    position: relative;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck.ck-sidebar {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+/* 批注卡片 */
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck.ck-annotation-wrapper {
+    border-radius: 2px;
+    border: none;
+    background: var(--ck-color-base-background, #fff);
+    box-shadow: 0 1px 1px 1px hsl(0, 0%, 90%);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck.ck-annotation-wrapper:hover {
+    box-shadow: 0 2px 4px 1px hsl(0, 0%, 84%);
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck.ck-annotation-wrapper--active {
+    box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.2);
+}
+
+/* 高亮侧栏项 */
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-sidebar-item:hover,
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-sidebar-item--comment-selected {
+    border-left: 3px solid hsl(54, 93%, 48%);
+}
+
+/* 批注布局 */
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start;
+    padding: 8px;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation__main {
+    display: grid !important;
+    grid-template-columns: 1fr auto;
+    flex: 1;
+    min-width: 0;
+    padding-left: 8px;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation__info {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation__content-wrapper {
+    grid-column: 1 / -1;
+}
+
+/* 用户头像 */
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation__user {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--ck-color-base-background, #fff);
+    background: hsl(207, 52%, 44%);
+    margin: 3px 2px 2px;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation__user .ck-user__img {
+    display: none !important;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation__user .ck-user__name {
+    color: #fff;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 11px;
+}
+
+/* 信息行 */
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation__info-name {
+    font-size: 8px;
+    font-weight: 700;
+    color: hsl(0, 0%, 46%);
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation__info-time {
+    font-size: 8px;
+    font-weight: 700;
+    color: hsl(0, 0%, 46%);
+    margin: 0 8px;
+}
+
+/* 操作按钮 */
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck.ck-button {
+    border-radius: 2px;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-comment--resolve {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    color: hsl(0, 0%, 60%) !important;
+    opacity: 0.5;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-comment--resolve .ck-button__icon {
+    width: 14px !important;
+    height: 14px !important;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-comment--resolve:hover {
+    opacity: 1;
+    color: hsl(120, 100%, 27%) !important;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation .ck-dropdown__button {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    color: hsl(0, 0%, 60%) !important;
+    opacity: 0.5;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation .ck-dropdown__button .ck-button__icon {
+    width: 14px !important;
+    height: 14px !important;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation .ck-dropdown__button .ck-dropdown__arrow {
+    display: none !important;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-annotation .ck-dropdown__button:hover {
+    opacity: 1;
+}
+
+/* 回复输入区 */
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-comment__input-container {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start;
+    padding: 8px;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-comment__input-container--active {
+    background: hsl(213, 58%, 97%);
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-thread__user {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--ck-color-base-background, #fff);
+    background: hsl(207, 52%, 44%);
+    margin: 2px;
+    flex-shrink: 0;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-thread__user .ck-user__img {
+    display: none !important;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-thread__user .ck-user__name {
+    color: #fff;
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 10px;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-comment__input-wrapper {
+    flex: 1;
+    min-width: 0;
+    margin-left: 8px;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-comment__input .ck-editor__editable {
+    padding: 6px 8px !important;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-comment__input-container .ck-comment__input .ck-editor__main > .ck-editor__editable.ck-editor__editable {
+    min-height: 40px !important;
+    max-height: 100px !important;
+    height: auto !important;
+    overflow-y: auto;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-comment__input-actions {
+    display: none;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-comment__input-container--active .ck-comment__input-actions {
+    display: flex !important;
+}
+
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-comment__input-wrapper:has(.ck-editor__editable.ck-focused) .ck-comment__input-actions {
+    display: flex;
+}
+
+/* ck-sidebar-item 绝对定位 */
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-sidebar-item {
+    position: absolute;
+    width: 100%;
+}
+
+/* 无障碍提示文本 */
+vaadin-ckeditor.notion-editor .annotation-sidebar-container .ck-aria-description {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+}
+
+/* ===== Revision History ===== */
+vaadin-ckeditor.notion-editor .revision-history {
+    display: none;
+    border: 1px solid var(--ck-color-base-border, #ccced1);
+}
+
+vaadin-ckeditor.notion-editor .revision-history__wrapper {
+    display: flex;
+    height: calc(100vh - 80px);
+}
+
+vaadin-ckeditor.notion-editor .revision-history__editor {
+    flex: 1;
+    overflow: hidden;
+}
+
+vaadin-ckeditor.notion-editor .revision-history__sidebar {
+    min-width: var(--ck-sidebar-width);
+    max-width: var(--ck-sidebar-width);
+    border-left: 1px solid var(--ck-color-base-border, #ccced1);
+    overflow-y: auto;
+    background: var(--ck-color-base-foreground, #fafafa);
+}
+
+/* ===== Dark Theme（双选择器：data-ck-theme + Vaadin html[theme~="dark"]）===== */
+
+/* --- Comment marker --- */
+vaadin-ckeditor.notion-editor[data-ck-theme="dark"] .ck-content .ck-comment-marker,
+html[theme~="dark"] vaadin-ckeditor.notion-editor:not([data-ck-theme="light"]) .ck-content .ck-comment-marker {
+    background-color: hsla(54, 100%, 40%, 0.3) !important;
+    border-bottom-color: hsl(54, 80%, 40%) !important;
+}
+
+/* --- Annotation wrapper --- */
+vaadin-ckeditor.notion-editor[data-ck-theme="dark"] .annotation-sidebar-container .ck.ck-annotation-wrapper,
+html[theme~="dark"] vaadin-ckeditor.notion-editor:not([data-ck-theme="light"]) .annotation-sidebar-container .ck.ck-annotation-wrapper {
+    background: var(--ck-color-base-background, hsl(0, 0%, 18%));
+    box-shadow: 0 1px 1px 1px hsl(0, 0%, 12%);
+}
+
+vaadin-ckeditor.notion-editor[data-ck-theme="dark"] .annotation-sidebar-container .ck.ck-annotation-wrapper:hover,
+html[theme~="dark"] vaadin-ckeditor.notion-editor:not([data-ck-theme="light"]) .annotation-sidebar-container .ck.ck-annotation-wrapper:hover {
+    box-shadow: 0 2px 4px 1px rgba(0, 0, 0, 0.35);
+}
+
+vaadin-ckeditor.notion-editor[data-ck-theme="dark"] .annotation-sidebar-container .ck.ck-annotation-wrapper--active,
+html[theme~="dark"] vaadin-ckeditor.notion-editor:not([data-ck-theme="light"]) .annotation-sidebar-container .ck.ck-annotation-wrapper--active {
+    box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.4);
+}
+
+/* --- User avatar borders --- */
+vaadin-ckeditor.notion-editor[data-ck-theme="dark"] .annotation-sidebar-container .ck-annotation__user,
+html[theme~="dark"] vaadin-ckeditor.notion-editor:not([data-ck-theme="light"]) .annotation-sidebar-container .ck-annotation__user {
+    border-color: var(--ck-color-base-background, hsl(0, 0%, 18%));
+}
+
+vaadin-ckeditor.notion-editor[data-ck-theme="dark"] .annotation-sidebar-container .ck-thread__user,
+html[theme~="dark"] vaadin-ckeditor.notion-editor:not([data-ck-theme="light"]) .annotation-sidebar-container .ck-thread__user {
+    border-color: var(--ck-color-base-background, hsl(0, 0%, 18%));
+}
+
+/* --- Info text --- */
+vaadin-ckeditor.notion-editor[data-ck-theme="dark"] .annotation-sidebar-container .ck-annotation__info-name,
+vaadin-ckeditor.notion-editor[data-ck-theme="dark"] .annotation-sidebar-container .ck-annotation__info-time,
+html[theme~="dark"] vaadin-ckeditor.notion-editor:not([data-ck-theme="light"]) .annotation-sidebar-container .ck-annotation__info-name,
+html[theme~="dark"] vaadin-ckeditor.notion-editor:not([data-ck-theme="light"]) .annotation-sidebar-container .ck-annotation__info-time {
+    color: hsl(0, 0%, 52%);
+}
+
+/* --- Active input background --- */
+vaadin-ckeditor.notion-editor[data-ck-theme="dark"] .annotation-sidebar-container .ck-comment__input-container--active,
+html[theme~="dark"] vaadin-ckeditor.notion-editor:not([data-ck-theme="light"]) .annotation-sidebar-container .ck-comment__input-container--active {
+    background: hsl(220, 15%, 22%);
+}
+
+/* --- Presence list --- */
+vaadin-ckeditor.notion-editor[data-ck-theme="dark"] .presence-list-container .ck-user__name,
+html[theme~="dark"] vaadin-ckeditor.notion-editor:not([data-ck-theme="light"]) .presence-list-container .ck-user__name {
+    box-shadow: 0 0 0 2px var(--ck-color-base-foreground, hsl(270, 1%, 29%)), 0 0 0 4px hsl(142, 71%, 45%);
+}
+
+vaadin-ckeditor.notion-editor[data-ck-theme="dark"] .presence-list-container .ck-presence-list__marker,
+html[theme~="dark"] vaadin-ckeditor.notion-editor:not([data-ck-theme="light"]) .presence-list-container .ck-presence-list__marker {
+    border-color: var(--ck-color-base-foreground, hsl(270, 1%, 29%));
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+    vaadin-ckeditor.notion-editor .annotation-sidebar-wrapper {
+        display: none !important;
+    }
+}
+
+@media (max-width: 700px) {
+    vaadin-ckeditor.notion-editor .editor-container__editor {
+        padding: 0 16px;
+    }
+}
