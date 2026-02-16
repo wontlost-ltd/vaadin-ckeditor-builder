@@ -21,7 +21,9 @@ import com.wontlost.ckeditor.*;
 import com.wontlost.ckeditor.config.AIProperties;
 import com.wontlost.ckeditor.config.CKEditorProperties;
 import com.wontlost.ckeditor.config.CollaborationProperties;
+import com.wontlost.ckeditor.config.TurnstileProperties;
 import com.wontlost.ckeditor.i18n.I18nUtil;
+import com.wontlost.ckeditor.security.TurnstileLoginFormSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.node.ObjectNode;
@@ -60,14 +62,17 @@ public class AIDocumentEditorView extends VerticalLayout implements BeforeEnterO
     private final String licenseKey;
     private final CollaborationProperties collaborationProperties;
     private final AIProperties aiProperties;
+    private final TurnstileProperties turnstileProperties;
 
     public AIDocumentEditorView(CKEditorProperties ckEditorProperties,
                                 CollaborationProperties collaborationProperties,
-                                AIProperties aiProperties) {
+                                AIProperties aiProperties,
+                                TurnstileProperties turnstileProperties) {
         this.licenseKey = ckEditorProperties.getLicenseKey();
         this.hasPremiumLicense = ckEditorProperties.hasPremiumLicense();
         this.collaborationProperties = collaborationProperties;
         this.aiProperties = aiProperties;
+        this.turnstileProperties = turnstileProperties;
 
         setSizeFull();
         setPadding(false);
@@ -237,6 +242,7 @@ public class AIDocumentEditorView extends VerticalLayout implements BeforeEnterO
         LoginForm loginForm = new LoginForm();
         loginForm.setAction("login?redirect=/ai-document-editor");
         loginForm.setForgotPasswordButtonVisible(false);
+        TurnstileLoginFormSupport.inject(loginForm, turnstileProperties);
 
         Span description = new Span(I18nUtil.get("collab.login.description"));
         description.getStyle()

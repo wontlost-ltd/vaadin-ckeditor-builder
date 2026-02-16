@@ -20,7 +20,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.wontlost.ckeditor.*;
 import com.wontlost.ckeditor.config.CKEditorProperties;
 import com.wontlost.ckeditor.config.CollaborationProperties;
+import com.wontlost.ckeditor.config.TurnstileProperties;
 import com.wontlost.ckeditor.i18n.I18nUtil;
+import com.wontlost.ckeditor.security.TurnstileLoginFormSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.node.ObjectNode;
@@ -63,12 +65,15 @@ public class NotionDocumentEditorView extends VerticalLayout implements BeforeEn
     private final boolean hasPremiumLicense;
     private final String licenseKey;
     private final CollaborationProperties collaborationProperties;
+    private final TurnstileProperties turnstileProperties;
 
     public NotionDocumentEditorView(CKEditorProperties ckEditorProperties,
-                                    CollaborationProperties collaborationProperties) {
+                                    CollaborationProperties collaborationProperties,
+                                    TurnstileProperties turnstileProperties) {
         this.licenseKey = ckEditorProperties.getLicenseKey();
         this.hasPremiumLicense = ckEditorProperties.hasPremiumLicense();
         this.collaborationProperties = collaborationProperties;
+        this.turnstileProperties = turnstileProperties;
 
         setSizeFull();
         setPadding(false);
@@ -267,6 +272,7 @@ public class NotionDocumentEditorView extends VerticalLayout implements BeforeEn
         LoginForm loginForm = new LoginForm();
         loginForm.setAction("login?redirect=/notion-document-editor");
         loginForm.setForgotPasswordButtonVisible(false);
+        TurnstileLoginFormSupport.inject(loginForm, turnstileProperties);
 
         Span description = new Span(I18nUtil.get("collab.login.description"));
         description.getStyle()

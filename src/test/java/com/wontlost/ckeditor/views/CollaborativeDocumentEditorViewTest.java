@@ -7,6 +7,7 @@ import com.vaadin.flow.component.login.LoginForm;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.wontlost.ckeditor.config.CKEditorProperties;
 import com.wontlost.ckeditor.config.CollaborationProperties;
+import com.wontlost.ckeditor.config.TurnstileProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +40,8 @@ class CollaborativeDocumentEditorViewTest {
     @Mock
     private BeforeEnterEvent beforeEnterEvent;
 
+    private final TurnstileProperties turnstileProperties = new TurnstileProperties();
+
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
@@ -54,7 +57,7 @@ class CollaborativeDocumentEditorViewTest {
         void setUp() {
             when(ckEditorProperties.getLicenseKey()).thenReturn(LICENSE_KEY);
             when(ckEditorProperties.hasPremiumLicense()).thenReturn(false);
-            view = new CollaborativeDocumentEditorView(ckEditorProperties, collaborationProperties);
+            view = new CollaborativeDocumentEditorView(ckEditorProperties, collaborationProperties, turnstileProperties);
         }
 
         @Test
@@ -78,7 +81,7 @@ class CollaborativeDocumentEditorViewTest {
             when(ckEditorProperties.getLicenseKey()).thenReturn(LICENSE_KEY);
             when(ckEditorProperties.hasPremiumLicense()).thenReturn(false);
             CollaborativeDocumentEditorView view =
-                new CollaborativeDocumentEditorView(ckEditorProperties, collaborationProperties);
+                new CollaborativeDocumentEditorView(ckEditorProperties, collaborationProperties, turnstileProperties);
 
             view.beforeEnter(beforeEnterEvent);
 
@@ -100,7 +103,7 @@ class CollaborativeDocumentEditorViewTest {
             when(ckEditorProperties.getLicenseKey()).thenReturn(LICENSE_KEY);
             when(ckEditorProperties.hasPremiumLicense()).thenReturn(false);
             CollaborativeDocumentEditorView view =
-                new CollaborativeDocumentEditorView(ckEditorProperties, collaborationProperties);
+                new CollaborativeDocumentEditorView(ckEditorProperties, collaborationProperties, turnstileProperties);
 
             view.beforeEnter(beforeEnterEvent);
 
@@ -203,7 +206,7 @@ class CollaborativeDocumentEditorViewTest {
                 when(collaborationProperties.getWebSocketUrl()).thenReturn("ws://localhost");
             }
         }
-        return new CollaborativeDocumentEditorView(ckEditorProperties, collaborationProperties);
+        return new CollaborativeDocumentEditorView(ckEditorProperties, collaborationProperties, turnstileProperties);
     }
 
     private Div findChildDivByClass(CollaborativeDocumentEditorView view, String className) {

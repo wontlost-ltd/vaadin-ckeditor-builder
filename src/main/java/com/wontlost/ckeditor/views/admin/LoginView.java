@@ -9,6 +9,8 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
+import com.wontlost.ckeditor.config.TurnstileProperties;
+import com.wontlost.ckeditor.security.TurnstileLoginFormSupport;
 
 /**
  * 管理员登录视图
@@ -20,13 +22,14 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
 
     private final LoginForm loginForm = new LoginForm();
 
-    public LoginView() {
+    public LoginView(TurnstileProperties turnstileProperties) {
         setSizeFull();
         setAlignItems(FlexComponent.Alignment.CENTER);
         setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
 
         loginForm.setAction("login");
         loginForm.setForgotPasswordButtonVisible(false);
+        TurnstileLoginFormSupport.inject(loginForm, turnstileProperties);
 
         add(new H1("CKEditor Builder 管理后台"), loginForm);
     }

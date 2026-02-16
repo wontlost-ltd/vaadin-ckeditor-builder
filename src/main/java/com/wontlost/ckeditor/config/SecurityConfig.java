@@ -1,6 +1,7 @@
 package com.wontlost.ckeditor.config;
 
 import com.vaadin.flow.spring.security.NavigationAccessControlConfigurer;
+import com.wontlost.ckeditor.security.TurnstileFilter;
 import com.wontlost.ckeditor.views.admin.LoginView;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.UrlUtils;
 
 /**
@@ -32,13 +34,17 @@ public class SecurityConfig {
     private String adminPassword;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   TurnstileFilter turnstileFilter) throws Exception {
         // API 端点认证：token 和 AI 代理均需认证（ai-token 匿名可访问，仅用于预览）
         http.authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/ckeditor/token", "/api/ai/proxy").fullyAuthenticated()
             .requestMatchers("/api/ai/preview-proxy", "/api/ckeditor/ai-token").permitAll()
             .anyRequest().permitAll()
         );
+
+        // Turnstile 验证在认证之前执行，仅拦截 POST /login
+        http.addFilterBefore(turnstileFilter, UsernamePasswordAuthenticationFilter.class);
 
         // 配置表单登录 — redirect 参数白名单校验，防止开放重定向
         SimpleUrlAuthenticationSuccessHandler successHandler = new SimpleUrlAuthenticationSuccessHandler() {
@@ -80,6 +86,11 @@ public class SecurityConfig {
         http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 
         return http.build();
+    }
+
+    @Bean
+    public TurnstileFilter turnstileFilter(TurnstileProperties turnstileProperties) {
+        return new TurnstileFilter(turnstileProperties);
     }
 
     /**
