@@ -4,6 +4,13 @@ build
 data
 node_modules
 .env
+.env.*
 .idea
 *.iml
-wallet/Wallet_ckeditoratp.zip
+wallet/
+.m2/
+.context/
+.claude/
+docs/
+*.md
+!README.md
