@@ -136,11 +136,18 @@ jobs:
         run: |
           IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}"
           echo "Inspecting jar contents in ${IMAGE}"
-          # 检查 jar 内是否包含 production hashed bundle，确认 vaadinBuildFrontend 实际执行
-          docker run --rm --entrypoint sh "${IMAGE}" -c \
-            "jar tf app.jar | grep -E 'META-INF/VAADIN/(build|webapp)' | head -10 && \
-             jar tf app.jar | grep -q 'META-INF/VAADIN/build/' || \
-             { echo '::error::Vaadin production bundle missing from jar'; exit 1; }"
+          # 运行时镜像基于 alpine + jlink JRE，没有 jar 命令；
+          # 把 jar 拷到 runner 上用 unzip 检查（jar 文件本质是 zip）
+          CID=$(docker create "${IMAGE}")
+          docker cp "${CID}:/app/app.jar" /tmp/app.jar
+          docker rm "${CID}"
+          echo "--- sample of META-INF/VAADIN entries ---"
+          unzip -l /tmp/app.jar | grep -E 'META-INF/VAADIN/(build|webapp)' | head -10 || true
+          if ! unzip -l /tmp/app.jar | grep -q 'META-INF/VAADIN/build/'; then
+            echo '::error::Vaadin production bundle (META-INF/VAADIN/build/) missing from jar'
+            exit 1
+          fi
+          echo "Vaadin production bundle verified"
 
       - name: Smoke test container
         run: |
