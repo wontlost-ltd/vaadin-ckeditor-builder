@@ -55,7 +55,7 @@ public class MainView extends AppLayout {
             .set("white-space", "nowrap");
 
         // 版本标签
-        Span version = new Span("v5.0.*");
+        Span version = new Span("v5.2.*");
         version.addClassName("version-badge");
         version.getStyle()
             .set("font-size", "11px")
