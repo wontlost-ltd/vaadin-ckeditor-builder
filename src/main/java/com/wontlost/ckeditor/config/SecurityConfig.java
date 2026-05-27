@@ -37,7 +37,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    TurnstileFilter turnstileFilter) throws Exception {
         // API 端点认证：token 和 AI 代理均需认证（ai-token 匿名可访问，仅用于预览）
+        // Actuator 健康探针对 Kubernetes kubelet 开放，便于 liveness/readiness 探测
         http.authorizeHttpRequests(auth -> auth
+            .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
             .requestMatchers("/api/ckeditor/token", "/api/ai/proxy").fullyAuthenticated()
             .requestMatchers("/api/ai/preview-proxy", "/api/ckeditor/ai-token").permitAll()
             .anyRequest().permitAll()
