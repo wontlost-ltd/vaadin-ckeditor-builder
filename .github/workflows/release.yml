@@ -141,10 +141,12 @@ jobs:
           CID=$(docker create "${IMAGE}")
           docker cp "${CID}:/app/app.jar" /tmp/app.jar
           docker rm "${CID}"
-          echo "--- sample of META-INF/VAADIN entries ---"
-          unzip -l /tmp/app.jar | grep -E 'META-INF/VAADIN/(build|webapp)' | head -10 || true
-          if ! unzip -l /tmp/app.jar | grep -q 'META-INF/VAADIN/build/'; then
-            echo '::error::Vaadin production bundle (META-INF/VAADIN/build/) missing from jar'
+          echo "--- sample of Vaadin production bundle entries ---"
+          unzip -l /tmp/app.jar | grep -E 'META-INF/VAADIN/webapp/VAADIN/build/' | head -10 || true
+          # Vaadin 25 把 production bundle 放在 META-INF/VAADIN/webapp/VAADIN/build/
+          # 至少应包含 FlowClient-*.js 这种核心 chunk
+          if ! unzip -l /tmp/app.jar | grep -qE 'META-INF/VAADIN/webapp/VAADIN/build/FlowClient-.*\.js$'; then
+            echo '::error::Vaadin production bundle missing (no FlowClient chunk under META-INF/VAADIN/webapp/VAADIN/build/)'
             exit 1
           fi
           echo "Vaadin production bundle verified"
