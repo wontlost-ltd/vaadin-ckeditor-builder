@@ -92,3 +92,8 @@ vaadin-ckeditor.document-editor {
         padding: 10mm 8mm !important;
     }
 }
+
+/* 文档导航按钮条（文首/文末跳转、聚焦） */
+.document-editor-nav {
+    margin: 0 16px 8px 24px;
+}

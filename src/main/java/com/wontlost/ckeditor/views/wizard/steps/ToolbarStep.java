@@ -237,10 +237,6 @@ public class ToolbarStep implements WizardStep {
         // Add user-selected plugins (skip problematic ones)
         for (CKEditorPlugin plugin : state.getSelectedPlugins()) {
             String pluginName = plugin.getJsName();
-            // Skip LineHeight (module import issues)
-            if (plugin == CKEditorPlugin.LINE_HEIGHT) {
-                continue;
-            }
             // Skip standard plugins that need special handling
             if (STANDARD_PLUGINS_TO_SKIP.contains(pluginName)) {
                 continue;
@@ -303,10 +299,8 @@ public class ToolbarStep implements WizardStep {
             builder.addCustomPlugin(pluginBuilder.build());
         }
 
-        // Configure toolbar (filter out lineHeight)
-        List<String> filteredToolbarItems = toolbarItems.stream()
-            .filter(item -> !"lineHeight".equals(item))
-            .toList();
+        // Configure toolbar
+        List<String> filteredToolbarItems = toolbarItems;
 
         // Must use builder.withToolbar() to explicitly set toolbar
         // Otherwise frontend will use preset's default toolbar (which doesn't include Premium plugin items)
@@ -377,11 +371,6 @@ public class ToolbarStep implements WizardStep {
                 items.addAll(plugin.getToolbarItems());
             }
             toolbarItems.addAll(items);
-        }
-
-        // Add LineHeight toolbar item
-        if (state.hasPlugin(CKEditorPlugin.LINE_HEIGHT) && !toolbarItems.contains("lineHeight")) {
-            toolbarItems.add("lineHeight");
         }
 
         // Add Premium plugin toolbar items

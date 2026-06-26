@@ -1,8 +1,10 @@
 package com.wontlost.ckeditor.views;
 
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -75,12 +77,19 @@ public class DocumentEditorView extends VerticalLayout {
         // Set to true if minimap updates too slowly with large documents
         editor.getElement().setProperty("minimapSimplePreview", false);
 
+        // 文档导航：光标定位与聚焦控制（长文档场景下快速跳转到文首/文末）
+        Button caretStart = new Button("Go to start", e -> editor.setCaretToStart());
+        Button caretEnd = new Button("Go to end", e -> editor.setCaretToEnd());
+        Button focusBtn = new Button("Focus editor", e -> editor.focusEditor());
+        HorizontalLayout caretToolbar = new HorizontalLayout(caretStart, caretEnd, focusBtn);
+        caretToolbar.addClassName("document-editor-nav");
+
         // Wrapper for layout control
         Div editorWrapper = new Div(editor);
         editorWrapper.addClassName("document-editor-container");
         editorWrapper.setSizeFull();
 
-        add(title, editorWrapper);
+        add(title, caretToolbar, editorWrapper);
         setFlexGrow(1, editorWrapper);
     }
 
@@ -108,6 +117,8 @@ public class DocumentEditorView extends VerticalLayout {
             .addPlugin(CKEditorPlugin.AUTO_IMAGE)
             .addPlugin(CKEditorPlugin.TABLE_CAPTION)
             .addPlugin(CKEditorPlugin.TABLE_COLUMN_RESIZE)
+            // 嵌入媒体（支持拖拽缩放，见下方 setMediaEmbedResizable）
+            .addPlugin(CKEditorPlugin.MEDIA_EMBED)
             .addPlugin(CKEditorPlugin.EMOJI)
             .addPlugin(CKEditorPlugin.SPECIAL_CHARACTERS)
             .addPlugin(CKEditorPlugin.SPECIAL_CHARACTERS_ESSENTIALS)
@@ -161,6 +172,12 @@ public class DocumentEditorView extends VerticalLayout {
                 .addCustomPlugin(CustomPlugin.fromPremium("PasteFromOfficeEnhanced"));
         }
 
+        // 启用嵌入媒体的拖拽缩放（与 MEDIA_EMBED 插件配合，允许调整视频等媒体尺寸）
+        CKEditorConfig config = new CKEditorConfig();
+        config.setMediaEmbed(true);
+        config.setMediaEmbedResizable(true);
+        builder.withConfig(config);
+
         return builder.build();
     }
 
@@ -181,7 +198,7 @@ public class DocumentEditorView extends VerticalLayout {
                 "bold", "italic", "underline", "strikethrough",
                 "subscript", "superscript", "removeFormat", "|",
                 "emoji", "specialCharacters", "horizontalLine", "pageBreak",
-                "link", "insertFootnote", "insertImage", "insertTable",
+                "link", "insertFootnote", "insertImage", "insertTable", "mediaEmbed",
                 "tableOfContents", "insertTemplate", "|",
                 "alignment", "lineHeight", "|",
                 "bulletedList", "numberedList", "multiLevelList", "todoList",
@@ -197,7 +214,7 @@ public class DocumentEditorView extends VerticalLayout {
                 "bold", "italic", "underline", "strikethrough",
                 "subscript", "superscript", "removeFormat", "|",
                 "emoji", "specialCharacters", "horizontalLine", "pageBreak",
-                "link", "insertImage", "insertTable", "|",
+                "link", "insertImage", "insertTable", "mediaEmbed", "|",
                 "alignment", "|",
                 "bulletedList", "numberedList", "todoList",
                 "outdent", "indent"

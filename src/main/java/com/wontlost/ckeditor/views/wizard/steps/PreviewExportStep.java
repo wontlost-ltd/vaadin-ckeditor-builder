@@ -410,10 +410,6 @@ public class PreviewExportStep implements WizardStep {
         // 添加用户选择的插件（跳过有问题的插件）
         for (CKEditorPlugin plugin : state.getSelectedPlugins()) {
             String pluginName = plugin.getJsName();
-            // 跳过 LineHeight（模块导入问题）
-            if (plugin == CKEditorPlugin.LINE_HEIGHT) {
-                continue;
-            }
             // 跳过需要特殊处理的标准插件
             if (STANDARD_PLUGINS_TO_SKIP.contains(pluginName)) {
                 continue;
@@ -459,9 +455,8 @@ public class PreviewExportStep implements WizardStep {
             addedPlugins.add(pluginName);
         }
 
-        // 使用用户配置的工具栏项目（过滤掉 lineHeight）
+        // 使用用户配置的工具栏项目
         List<String> toolbarItems = new ArrayList<>(state.getToolbarItems());
-        toolbarItems.removeIf(item -> "lineHeight".equals(item));
 
         // 添加 Premium 插件的工具栏项目（排除需要特殊配置的插件）
         for (BuilderState.CustomPluginConfig premiumConfig : state.getPremiumPlugins()) {

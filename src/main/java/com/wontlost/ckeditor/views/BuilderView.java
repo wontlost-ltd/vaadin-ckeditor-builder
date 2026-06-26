@@ -1594,13 +1594,7 @@ public class BuilderView extends VerticalLayout {
 
             // 添加自定义插件（超出预设的部分）
             for (CKEditorPlugin plugin : selectedPlugins) {
-                // LineHeight 需要使用本地自定义插件
-                if (plugin == CKEditorPlugin.LINE_HEIGHT) {
-                    builder.addCustomPlugin(CustomPlugin.builder("LineHeight")
-                        .withImportPath("custom-line-height")
-                        .withToolbarItems("lineHeight")
-                        .build());
-                } else if (!selectedPreset.hasPlugin(plugin)) {
+                if (!selectedPreset.hasPlugin(plugin)) {
                     builder.addPlugin(plugin);
                 }
             }

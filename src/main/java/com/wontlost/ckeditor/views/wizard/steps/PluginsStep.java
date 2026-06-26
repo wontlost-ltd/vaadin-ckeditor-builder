@@ -326,7 +326,6 @@ public class PluginsStep implements WizardStep {
             case INDENT -> I18nUtil.get("plugin.desc.indent");
             case INDENT_BLOCK -> I18nUtil.get("plugin.desc.indentBlock");
             case BLOCK_QUOTE -> I18nUtil.get("plugin.desc.blockQuote");
-            case LINE_HEIGHT -> I18nUtil.get("plugin.desc.lineHeight");
             // List
             case LIST -> I18nUtil.get("plugin.desc.list");
             case TODO_LIST -> I18nUtil.get("plugin.desc.todoList");
