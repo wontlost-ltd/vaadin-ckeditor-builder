@@ -16,12 +16,6 @@ java {
 }
 
 repositories {
-    // 本地构建的 ckeditor-vaadin 包从 ~/.m2 解析；用 exclusiveContent 限定仅解析
-    // com.wontlost:ckeditor-vaadin，避免 mavenLocal 污染其它依赖、保证 CI 可复现
-    exclusiveContent {
-        forRepository { mavenLocal() }
-        filter { includeModule('com.wontlost', 'ckeditor-vaadin') }
-    }
     mavenCentral()
     maven { url = uri('https://maven.vaadin.com/vaadin-addons') }
     maven { url = uri('https://maven.vaadin.com/vaadin-prereleases') }
