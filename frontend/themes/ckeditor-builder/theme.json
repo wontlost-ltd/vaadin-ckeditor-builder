@@ -1,4 +1,3 @@
 {
-  "lumoImports": ["typography", "color", "spacing", "badge", "utility"],
   "themeComponentStyles": true
 }

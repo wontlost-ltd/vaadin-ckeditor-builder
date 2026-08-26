@@ -230,9 +230,19 @@ vaadin-split-layout[orientation="vertical"]::part(handle) {
     height: 3px;
 }
 
-vaadin-split-layout::part(splitter):hover::part(handle) {
-    background: var(--app-primary);
-}
+/*
+    此处原有一条 `::part(splitter):hover::part(handle)` 规则，现已删除。
+    按 CSS Shadow Parts 规范，::part() 之后不能再选择下一层 part，该写法非法，
+    浏览器从不匹配它——即这条规则从未生效过。Vaadin 25.2 的前端构建改用
+    lightningcss 压缩后不再静默放过，会直接以 "Invalid state" 中断构建。
+
+    因本次为版本升级，目标是保持既有视觉表现，故直接删除而非改写：
+    改用宿主 `vaadin-split-layout:hover` 会在悬停左右内容区时也高亮把手，
+    属于引入新行为。splitter 的 hover 反馈由上方 ::part(splitter):hover 提供。
+    若日后确需"仅悬停分隔条时高亮把手"，应在
+    themes/ckeditor-builder/components/vaadin-split-layout.css 内写
+    `[part='splitter']:hover [part='handle']`（shadow root 内部选择器）。
+*/
 
 /* ===== 布局 ===== */
 .builder-view {
