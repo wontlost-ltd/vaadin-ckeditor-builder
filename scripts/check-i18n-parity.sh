@@ -49,9 +49,17 @@ done
 
 if [[ "${total_issues}" -eq 0 ]]; then
   echo "i18n parity check passed: all locales aligned with en baseline"
-else
-  echo "::warning::i18n parity check found ${total_issues} locale(s) with issues (non-blocking)"
+  exit 0
 fi
 
-# 永远返回 0，由用户决策接受不完整 locale
-exit 0
+# 全部 locale 已于 v5.2.0 对齐英文基线，故此处由 warning 升级为硬失败，
+# 防止新增 key 时漏译再次回归（缺键时 TranslationProvider 会把原始 key 显示给用户）。
+# 如需临时放行不完整的 locale，设 I18N_PARITY_STRICT=0 降级为 warning。
+if [[ "${I18N_PARITY_STRICT:-1}" == "0" ]]; then
+  echo "::warning::i18n parity check found ${total_issues} locale(s) with issues (non-blocking: I18N_PARITY_STRICT=0)"
+  exit 0
+fi
+
+echo "::error::i18n parity check found ${total_issues} locale(s) with issues"
+echo "Add the missing keys, or set I18N_PARITY_STRICT=0 to downgrade this to a warning."
+exit 1
