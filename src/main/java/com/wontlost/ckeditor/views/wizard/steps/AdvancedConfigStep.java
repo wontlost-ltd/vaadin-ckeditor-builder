@@ -242,10 +242,7 @@ public class AdvancedConfigStep implements WizardStep {
         premiumHint.addClassName("security-hint");
         Icon infoIcon = VaadinIcon.INFO_CIRCLE.create();
         infoIcon.setSize("14px");
-        Span hintText = new Span(I18nUtil.get("step6.premium.hint",
-            "Premium 功能需要有效的许可证。请访问 ckeditor.com/pricing 获取许可证，" +
-            "并在 CKEditor Portal 中为您的域名配置白名单。" +
-            "许可证密钥通过 CKEDITOR_LICENSE_KEY 环境变量配置。"));
+        Span hintText = new Span(I18nUtil.get("step6.premium.hint"));
         premiumHint.add(infoIcon, hintText);
 
         premiumPluginsGroup.add(premiumHint, titleRow, premiumPluginsList);
@@ -715,15 +712,13 @@ public class AdvancedConfigStep implements WizardStep {
         String uploadUrl = state.getSimpleUploadUrl();
         if (uploadUrl != null && !uploadUrl.isEmpty()) {
             if (!uploadUrl.startsWith("/") && !uploadUrl.startsWith("http")) {
-                return ValidationResult.warning(I18nUtil.get("validation.invalidUploadUrl",
-                    "Upload URL format may be incorrect, should start with / or http"));
+                return ValidationResult.warning(I18nUtil.get("validation.invalidUploadUrl"));
             }
         }
 
         // Check if Minimap is used in Decoupled mode
         if (state.isMinimapEnabled() && state.getEditorType() != com.wontlost.ckeditor.CKEditorType.DECOUPLED) {
-            return ValidationResult.warning(I18nUtil.get("validation.minimapDecoupled",
-                "Minimap feature is only available in Decoupled editor mode"));
+            return ValidationResult.warning(I18nUtil.get("validation.minimapDecoupled"));
         }
 
         return ValidationResult.ok();
