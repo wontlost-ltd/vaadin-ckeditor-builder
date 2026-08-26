@@ -1273,6 +1273,22 @@ vaadin-app-layout::part(navbar) {
     box-shadow: none !important;
 }
 
+/*
+    移除 drawer 占位。
+    本应用从不向 drawer 添加内容（导航在 navbar，移动端用自定义 .mobile-nav-menu 下拉），
+    但 AppLayout 始终渲染 drawer 插槽及其 backdrop，在页面左侧留下一条无用空白间隙。
+    Java 侧已调用 setDrawerOpened(false)，此处补齐插槽与内容区偏移的清理。
+*/
+vaadin-app-layout::part(drawer),
+vaadin-app-layout::part(backdrop) {
+    display: none !important;
+}
+
+/* drawer 隐藏后，内容区不应再为其保留左侧偏移 */
+vaadin-app-layout {
+    --vaadin-app-layout-drawer-offset-size: 0px !important;
+}
+
 /* App header 容器样式 */
 .app-header {
     background: transparent !important;
