@@ -2,8 +2,9 @@ name: release
 
 # 触发策略：
 # - pull_request: 仅跑测试，不构建镜像
-# - push main: 测试 -> 构建 arm64 镜像 -> 推 Docker Hub -> 更新 k3s GitOps 仓库
-# - push tag v*: 同上，但镜像额外推 semver tag（5.1.0 / 5.1 / 5 / latest）
+# - push main: 测试 -> 构建 arm64 镜像 -> 推 Docker Hub -> 向 k3s GitOps 仓库开 PR
+#   （k3s main 受分支保护，不能直推；合并该 PR 才会部署）
+# - push tag v*: 同上，但镜像额外推 semver tag（5.2.0 / 5.2 / 5 / latest）
 # - workflow_dispatch: 手动重发兜底
 on:
   pull_request:
@@ -192,6 +193,8 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      # 该 App 在 k3s 仓库上需要 Contents: write（推分支）与 Pull requests: write（开 PR）。
+      # 若缺少后者，"Commit & open PR" 会在 gh pr create 处报 403。
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v1
@@ -228,8 +231,15 @@ jobs:
           echo "--- preview rendered Deployment image field ---"
           kustomize build . | grep -E '^\s+image:' | head -3
 
-      - name: Commit & push
+      # k3s 仓库 main 受分支保护：要求经 PR 合并，且必须通过 verify / verify-image-pin
+      # 状态检查。直推会被 GH013 拒绝，故此处改为推分支 + 开 PR，由对方仓库的检查与
+      # 审阅者决定何时合并（合并即部署）。
+      - name: Commit & open PR
         working-directory: k3s
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PRIMARY_TAG: ${{ needs.docker-build-push.outputs.primary-tag }}
+          IMAGE_DIGEST: ${{ needs.docker-build-push.outputs.image-digest }}
         run: |
           git config user.name 'ckeditor-builder-gitops[bot]'
           git config user.email '${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
@@ -237,10 +247,40 @@ jobs:
             echo "No image change detected, skipping commit"
             exit 0
           fi
-          MSG="chore(ckeditor-builder): bump to ${{ needs.docker-build-push.outputs.primary-tag }}
 
-          Image: ${{ env.IMAGE_NAME }}@${{ needs.docker-build-push.outputs.image-digest }}
+          # 分支名带上游 commit SHA，便于追溯；同一 commit 重跑时复用同一分支
+          BRANCH="ckeditor-builder/bump-${GITHUB_SHA::7}"
+          git switch -c "${BRANCH}"
+
+          MSG="chore(ckeditor-builder): bump to ${PRIMARY_TAG}
+
+          Image: ${{ env.IMAGE_NAME }}@${IMAGE_DIGEST}
           Source: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
           git add ${{ env.GITOPS_PATH }}/kustomization.yaml
           git commit -m "${MSG}"
-          git push origin HEAD:main
+          git push --force-with-lease origin "${BRANCH}"
+
+          # 已存在同分支的开放 PR 则复用（重跑不会刷屏），否则新建
+          EXISTING=$(gh pr list --repo "${{ env.GITOPS_REPO }}" --head "${BRANCH}" \
+            --state open --json number --jq '.[0].number // empty')
+          if [[ -n "${EXISTING}" ]]; then
+            echo "Reusing existing PR #${EXISTING} (branch updated)"
+            gh pr view "${EXISTING}" --repo "${{ env.GITOPS_REPO }}" --json url --jq .url
+          else
+            gh pr create \
+              --repo "${{ env.GITOPS_REPO }}" \
+              --head "${BRANCH}" \
+              --base main \
+              --title "chore(ckeditor-builder): bump to ${PRIMARY_TAG}" \
+              --body "Automated image bump from [\`${GITHUB_SHA::7}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}).
+
+          | | |
+          | --- | --- |
+          | Image | \`${{ env.IMAGE_NAME }}\` |
+          | Tag | \`${PRIMARY_TAG}\` |
+          | Digest | \`${IMAGE_DIGEST}\` |
+
+          Deployment pins the immutable digest; the tag is a human-readable marker only.
+
+          Merging this PR deploys to the cluster."
+          fi
