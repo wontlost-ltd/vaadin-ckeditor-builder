@@ -252,13 +252,23 @@ jobs:
           BRANCH="ckeditor-builder/bump-${GITHUB_SHA::7}"
           git switch -c "${BRANCH}"
 
+          # 判断远端是否已有同名分支：决定用普通 push 还是带 lease 的强推。
+          # checkout 用了 fetch-depth:1 且未抓取该分支，本地没有对应的 remote-tracking ref，
+          # 此时裸 --force-with-lease 会因无 lease 基准而被拒（stale info），故需显式区分。
+          if git ls-remote --exit-code --heads origin "${BRANCH}" >/dev/null 2>&1; then
+            git fetch --depth=1 origin "${BRANCH}"
+            PUSH_ARGS=(--force-with-lease="${BRANCH}:$(git rev-parse FETCH_HEAD)")
+          else
+            PUSH_ARGS=()
+          fi
+
           MSG="chore(ckeditor-builder): bump to ${PRIMARY_TAG}
 
           Image: ${{ env.IMAGE_NAME }}@${IMAGE_DIGEST}
           Source: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
           git add ${{ env.GITOPS_PATH }}/kustomization.yaml
           git commit -m "${MSG}"
-          git push --force-with-lease origin "${BRANCH}"
+          git push "${PUSH_ARGS[@]}" origin "${BRANCH}"
 
           # 已存在同分支的开放 PR 则复用（重跑不会刷屏），否则新建
           EXISTING=$(gh pr list --repo "${{ env.GITOPS_REPO }}" --head "${BRANCH}" \
