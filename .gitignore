@@ -56,6 +56,10 @@ test-output/
 # Claude AI work files
 .claude/
 
+# CCG 工作流的本地任务状态与验证证据（task.json、上下文、浏览器截图等），
+# 属流程元数据而非交付物，不纳入版本控制。
+.ccg/
+
 # Local Maven repository
 .m2/
 
