@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.wontlost'
-version = '5.2.2'
+version = '5.2.3'
 description = 'Vaadin CKEditor Builder'
 
 java {

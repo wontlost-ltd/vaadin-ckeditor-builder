@@ -39,10 +39,10 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
@@ -57,7 +57,7 @@ jobs:
 
       - name: Upload test reports on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: |
@@ -65,7 +65,7 @@ jobs:
             build/test-results/**
           retention-days: 7
 
-      - name: i18n parity check (warning only)
+      - name: i18n parity check
         run: bash scripts/check-i18n-parity.sh
 
       - name: Verify version sync (tag triggers only)
@@ -94,7 +94,7 @@ jobs:
       primary-tag: ${{ steps.meta.outputs.version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -197,7 +197,7 @@ jobs:
       # 若缺少后者，"Commit & open PR" 会在 gh pr create 处报 403。
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.K3S_GITHUB_APP_ID }}
           private-key: ${{ secrets.K3S_GITHUB_APP_PRIVATE_KEY }}
@@ -205,7 +205,7 @@ jobs:
           repositories: k3s
 
       - name: Checkout k3s repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ env.GITOPS_REPO }}
           token: ${{ steps.app-token.outputs.token }}
@@ -248,8 +248,11 @@ jobs:
             exit 0
           fi
 
-          # 分支名带上游 commit SHA，便于追溯；同一 commit 重跑时复用同一分支
-          BRANCH="ckeditor-builder/bump-${GITHUB_SHA::7}"
+          # 分支名带上游 commit SHA + ref 名，便于追溯。
+          # 必须带 ref 名：推 tag 会同时触发 main 与 tag 两个 run，二者 SHA 相同，
+          # 若只用 SHA 会写到同一分支互相覆盖（表现为 PR 标题与实际 pin 的镜像 tag 不一致）。
+          REF_SLUG=$(echo "${GITHUB_REF_NAME}" | tr -c 'a-zA-Z0-9._-' '-' | sed 's/-*$//')
+          BRANCH="ckeditor-builder/bump-${GITHUB_SHA::7}-${REF_SLUG}"
           git switch -c "${BRANCH}"
 
           # 判断远端是否已有同名分支：决定用普通 push 还是带 lease 的强推。
