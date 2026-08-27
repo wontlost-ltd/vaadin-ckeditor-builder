@@ -1,11 +1,12 @@
 name: release
 
-# 触发策略：
-# - pull_request: 仅跑测试，不构建镜像
-# - push main: 测试 -> 构建 arm64 镜像 -> 推 Docker Hub -> 向 k3s GitOps 仓库开 PR
-#   （k3s main 受分支保护，不能直推；合并该 PR 才会部署）
-# - push tag v*: 同上，但镜像额外推 semver tag（5.2.0 / 5.2 / 5 / latest）
-# - workflow_dispatch: 手动重发兜底
+# 触发策略：发布只由 tag 驱动，main 推送仅作质量门禁。
+# - pull_request: 仅跑测试
+# - push main: 仅跑测试。main 无分支保护且习惯直接提交，保留此门禁以便尽早发现问题；
+#   不构建镜像，避免与 tag 触发产生重复的镜像推送和重复的 GitOps PR
+# - push tag v*: 测试 -> 构建 arm64 镜像 -> 推 Docker Hub（含 semver tag 5.2.0 / 5.2 / 5 / latest）
+#   -> 向 k3s GitOps 仓库开 PR（k3s main 受分支保护，不能直推；合并该 PR 才会部署）
+# - workflow_dispatch: 手动重发兜底，行为同 tag（在 tag ref 上运行才会产出 semver tag）
 on:
   pull_request:
     branches: [main]
@@ -72,7 +73,10 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          GRADLE_VERSION=$(grep -E "^version\s*=" build.gradle | sed -E "s/version\s*=\s*['\"]([^'\"]+)['\"].*/\1/")
+          # 用 [[:space:]] 而非 \s：BSD sed（macOS）不支持 \s，会静默不替换，
+          # 导致本地无法复现该门禁。POSIX 字符类在 GNU/BSD 下行为一致。
+          GRADLE_VERSION=$(grep -E "^version[[:space:]]*=" build.gradle \
+            | sed -E "s/version[[:space:]]*=[[:space:]]*['\"]([^'\"]+)['\"].*/\1/")
           if [[ "${TAG_VERSION}" != "${GRADLE_VERSION}" ]]; then
             echo "::error::Git tag v${TAG_VERSION} does not match build.gradle version ${GRADLE_VERSION}"
             exit 1
@@ -81,12 +85,12 @@ jobs:
 
   # ============================================================
   # Job 2: 构建并推送 arm64 镜像到 Docker Hub
-  # PR 不推，仅 main / tag / dispatch 推
+  # 仅 tag / 手动 dispatch 推；main 推送只跑测试，不产出镜像
   # ============================================================
   docker-build-push:
     name: Build & Push Image
     needs: test
-    if: github.event_name != 'pull_request'
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04-arm
     outputs:
       image-digest: ${{ steps.build.outputs.digest }}
@@ -110,13 +114,13 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # 本 job 只在 tag / dispatch 下运行，故不再有 branch 相关的 tag 规则。
+          # tag 触发产出：v5.2.4 / 5.2 / 5 / latest / sha-<short>
           tags: |
-            type=ref,event=branch
             type=ref,event=tag
             type=semver,pattern={{major}}.{{minor}},enable=${{ startsWith(github.ref, 'refs/tags/v') }}
             type=semver,pattern={{major}},enable=${{ startsWith(github.ref, 'refs/tags/v') }}
             type=sha,prefix=sha-,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
 
       - name: Build & push image
@@ -190,7 +194,6 @@ jobs:
   update-gitops:
     name: Update GitOps Repo
     needs: docker-build-push
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       # 该 App 在 k3s 仓库上需要 Contents: write（推分支）与 Pull requests: write（开 PR）。
@@ -249,8 +252,8 @@ jobs:
           fi
 
           # 分支名带上游 commit SHA + ref 名，便于追溯。
-          # 必须带 ref 名：推 tag 会同时触发 main 与 tag 两个 run，二者 SHA 相同，
-          # 若只用 SHA 会写到同一分支互相覆盖（表现为 PR 标题与实际 pin 的镜像 tag 不一致）。
+          # 保留 ref 名：同一 commit 可能被打上多个 tag（如补发或改名），
+          # 只用 SHA 会让这些 run 写到同一分支互相覆盖。
           REF_SLUG=$(echo "${GITHUB_REF_NAME}" | tr -c 'a-zA-Z0-9._-' '-' | sed 's/-*$//')
           BRANCH="ckeditor-builder/bump-${GITHUB_SHA::7}-${REF_SLUG}"
           git switch -c "${BRANCH}"
