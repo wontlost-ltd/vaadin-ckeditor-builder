@@ -1,25 +1,29 @@
 # Vaadin CKEditor Builder
 
-一个可视化的 **CKEditor 5 配置生成器**：通过 7 步向导零代码配置编辑器，
-再导出可直接粘贴的 Java / TypeScript / JSON 配置。
+*[中文文档](README.zh-CN.md)*
 
-面向 Java / Vaadin 开发者 —— 把「要装哪些插件、工具栏怎么排、主题怎么配」
-从翻文档试错，变成点几下再复制走。
+A visual **CKEditor 5 configuration builder**: configure an editor through a
+7-step wizard with no code, then export ready-to-paste Java, TypeScript or
+JSON configuration.
 
-基于 [`com.wontlost:ckeditor-vaadin`](https://github.com/wontlost-ltd/vaadin-ckeditor)
-（Apache 2.0，Maven Central + Vaadin Directory）构建。
+Built for Java / Vaadin developers — it turns "which plugins do I need, how do
+I lay out the toolbar, how do I theme it?" from documentation trial-and-error
+into a few clicks and a copy-paste.
 
-## 功能
+Built on [`com.wontlost:ckeditor-vaadin`](https://github.com/wontlost-ltd/vaadin-ckeditor)
+(Apache 2.0, on Maven Central and the Vaadin Directory).
 
-- **7 步向导**：入门引导 → 编辑器类型 → 插件 → 工具栏 → 样式与语言 → 高级配置 → 预览导出
-- **70+ CKEditor 插件**可选，自动处理互斥与依赖关系
-- **三种导出格式**：Java（`VaadinCKEditor` 构建器代码）、TypeScript、JSON
-- **实时预览**：配置即时反映到真实编辑器实例
-- **多语言界面**：英 / 中 / 西 / 法 / 俄 / 阿拉伯 共 6 种（i18n parity 由 CI 闸门保证）
+## Features
 
-## 技术栈
+- **7-step wizard** — getting started → editor type → plugins → toolbar → style & language → advanced config → preview & export
+- **70+ CKEditor plugins** to choose from, with mutual-exclusion and dependency resolution handled for you
+- **Three export formats** — Java (`VaadinCKEditor` builder code), TypeScript, and JSON
+- **Live preview** — configuration changes are reflected in a real editor instance immediately
+- **Localised UI** — English, Chinese, Spanish, French, Russian and Arabic (parity enforced by a CI gate)
 
-| 组件 | 版本 |
+## Tech stack
+
+| Component | Version |
 |---|---|
 | Java | 21 |
 | Vaadin | 25.3.0 |
@@ -27,76 +31,82 @@
 | ckeditor-vaadin | 5.5.0 |
 | CKEditor 5 | 48.5.2 |
 
-## 快速开始
+## Quick start
 
 ```bash
 ./gradlew bootRun
 ```
 
-默认监听 <http://localhost:8082>。
+Listens on <http://localhost:8082> by default.
 
-### 许可证密钥
+### License key
 
-CKEditor 5 的商业插件需要密钥。缺省走 GPL：
+CKEditor 5's premium plugins require a key. The default falls back to GPL:
 
 ```bash
 CKEDITOR_LICENSE_KEY=GPL ./gradlew bootRun
 ```
 
-生产或使用高级插件时，通过环境变量提供商业密钥：
+For production, or when using premium plugins, supply a commercial key via the
+environment:
 
 ```bash
 CKEDITOR_LICENSE_KEY=<your-key> ./gradlew bootRun
 ```
 
-> ⚠️ 密钥过期时编辑器会降级为**只读**，浏览器控制台报 `license-key-expired`。
-> 遇到「渲染正常但无法输入」，先查这一项。
+> ⚠️ When the key has expired the editor degrades to **read-only** and the
+> browser console reports `license-key-expired`. If the editor renders but
+> won't accept input, check this first.
 
-### 数据存储
+### Data storage
 
-默认使用本地 H2 文件库（`./data/ckeditor-builder.mv.db`），开箱即用。
+Uses a local H2 file database by default (`./data/ckeditor-builder.mv.db`) —
+no setup required.
 
-Oracle ATP 同步为**可选**能力，缺省关闭。若本地未配置 wallet 而误开，
-应用会在启动时卡在 Oracle 连接重试上 —— 显式关掉即可：
+Oracle ATP sync is **optional** and off by default. If it is enabled without a
+local wallet configured, startup will hang retrying the Oracle connection.
+Turn it off explicitly:
 
 ```bash
 ./gradlew bootRun --args='--app.sync.oracle-enabled=false'
 ```
 
-## 构建
+## Building
 
 ```bash
-./gradlew test              # 单元测试
-./gradlew productionBuild -Pvaadin.productionMode=true   # 生产构建（含前端打包）
+./gradlew test              # unit tests
+./gradlew productionBuild -Pvaadin.productionMode=true   # production build (includes frontend bundle)
 ```
 
-Docker 镜像为多阶段构建（jlink 裁剪 JRE，约 170MB）：
+The Docker image is a multi-stage build (jlink-trimmed JRE, roughly 170 MB):
 
 ```bash
 docker build -t vaadin-ckeditor-builder .
 ```
 
-## 发布
+## Releasing
 
-版本号由 tag 驱动，`build.gradle` 的 `version` 必须与 tag 一致，
-否则 CI 的版本同步闸门会拒绝：
+Releases are tag-driven. The `version` in `build.gradle` must match the tag, or
+CI's version-sync gate rejects the build:
 
 ```bash
 git tag -a v5.3.0 -m "v5.3.0"
 git push origin v5.3.0
 ```
 
-`main` 推送只跑测试，不产出镜像；镜像与 GitOps 更新仅由 tag 触发。
+Pushes to `main` only run the tests; the image build and GitOps update are
+triggered by tags alone.
 
-## 许可证
+## License
 
 [Apache License 2.0](LICENSE) © 2026 WontLost Ltd
 
-本项目以 Apache 2.0 授权。**CKEditor 5 本身另行授权** —— 开源项目可用 GPL，
-商业用途需向 [CKEditor](https://ckeditor.com/pricing) 取得商业许可。
-本项目不分发任何 CKEditor 商业密钥。
+This project is licensed under Apache 2.0. **CKEditor 5 itself is licensed
+separately** — GPL for open-source use, or a commercial licence from
+[CKEditor](https://ckeditor.com/pricing). This project does not distribute any
+CKEditor commercial key.
 
-## 相关项目
+## Related projects
 
-- [vaadin-ckeditor](https://github.com/wontlost-ltd/vaadin-ckeditor) — 底层 Vaadin 组件（Apache 2.0）
-- [wontlost.com](https://wontlost.com) — 产品与服务
+- [vaadin-ckeditor](https://github.com/wontlost-ltd/vaadin-ckeditor) — the underlying Vaadin component (Apache 2.0)
+- [wontlost.com](https://wontlost.com) — products and services
