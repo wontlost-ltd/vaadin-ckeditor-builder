@@ -163,11 +163,13 @@ class CKEditor531FeatureTest {
     class UpgradeBaseline {
 
         @Test
-        @DisplayName("getVersion 报告 5.3.x 系列")
-        void versionIs53x() {
-            // 用前缀断言而非精确版本，避免补丁升级（5.3.2…）成为维护噪音
-            assertTrue(VaadinCKEditor.getVersion().startsWith("5.3"),
-                "VaadinCKEditor.getVersion 应为 5.3.x，实际：" + VaadinCKEditor.getVersion());
+        @DisplayName("getVersion 报告 5.5.x 系列")
+        void versionIs55x() {
+            // 用前缀断言而非精确版本，避免补丁升级（5.5.1…）成为维护噪音。
+            // 随 addon 升级到 5.5.0 一并上移基线：这条断言的作用是挡住
+            // 意外的版本回退或依赖漂移，故须跟着「当前预期版本」走。
+            assertTrue(VaadinCKEditor.getVersion().startsWith("5.5"),
+                "VaadinCKEditor.getVersion 应为 5.5.x，实际：" + VaadinCKEditor.getVersion());
         }
 
         @Test
