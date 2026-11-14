@@ -212,24 +212,10 @@ public class AdvancedConfigStep implements WizardStep {
         premiumPluginsList.setFlexWrap(FlexLayout.FlexWrap.WRAP);
         premiumPluginsList.addClassName("plugin-cards-container");
 
-        // Predefined Premium plugins - using i18n keys for descriptions
-        premiumPluginDefinitions = new String[][] {
-            {"ExportPdf", "premium.desc.exportPdf", "exportPdf"},
-            {"ExportWord", "premium.desc.exportWord", "exportWord"},
-            {"ImportWord", "premium.desc.importWord", "importWord"},
-            {"FormatPainter", "premium.desc.formatPainter", "formatPainter"},
-            {"SlashCommand", "premium.desc.slashCommand", ""},
-            {"TableOfContents", "premium.desc.tableOfContents", "tableOfContents"},
-            {"DocumentOutline", "premium.desc.documentOutline", ""},
-            {"Template", "premium.desc.template", "insertTemplate"},
-            {"CaseChange", "premium.desc.caseChange", "caseChange"},
-            {"MergeFields", "premium.desc.mergeFields", "mergeFields"},
-            {"Pagination", "premium.desc.pagination", "pageBreak"},
-            {"AIAssistant", "premium.desc.aiAssistant", "aiAssistant"},
-            {"Comments", "premium.desc.comments", "comment"},
-            {"TrackChanges", "premium.desc.trackChanges", "trackChanges"},
-            {"RevisionHistory", "premium.desc.revisionHistory", "revisionHistory"}
-        };
+        // premium 目录集中在 PluginCatalogue（名字由单测与 addon 的 PremiumPlugin 对齐）
+        premiumPluginDefinitions = com.wontlost.ckeditor.domain.PluginCatalogue.PREMIUM.stream()
+            .map(e -> new String[] {e.name(), e.descriptionKey(), e.toolbarItem()})
+            .toArray(String[][]::new);
 
         for (String[] pluginDef : premiumPluginDefinitions) {
             // pluginDef[1] is now an i18n key, so we use I18nUtil.get() to get the translated description

@@ -653,6 +653,14 @@ public class BuilderState implements Serializable {
         return licenseKey != null && !licenseKey.trim().isEmpty();
     }
 
+    /**
+     * 是否配置了商业 license key：字面值 GPL 只解锁开源功能，不能解锁 license 门控插件
+     * （与 CKEditorProperties.hasPremiumLicense 语义一致）。
+     */
+    public boolean hasCommercialLicenseKey() {
+        return hasLicenseKey() && !licenseKey.trim().equalsIgnoreCase("GPL");
+    }
+
     // ========== CKEditorConfig Advanced Config ==========
 
     public String getPlaceholder() { return placeholder; }

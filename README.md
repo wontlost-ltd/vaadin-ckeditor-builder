@@ -15,7 +15,7 @@ Built on [`com.wontlost:ckeditor-vaadin`](https://github.com/wontlost-ltd/vaadin
 
 ## Features
 
-- **7-step wizard** — getting started → editor type → plugins → toolbar → style & language → advanced config → preview & export
+- **7-step wizard** — getting started → editor type → plugins → advanced config → toolbar → style & language → preview & export
 - **70+ CKEditor plugins** to choose from, with mutual-exclusion and dependency resolution handled for you
 - **Three export formats** — Java (`VaadinCKEditor` builder code), TypeScript, and JSON
 - **Live preview** — configuration changes are reflected in a real editor instance immediately
