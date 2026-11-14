@@ -357,6 +357,7 @@ public class PluginsStep implements WizardStep {
             case TABLE_CELL_PROPERTIES -> I18nUtil.get("plugin.desc.tableCellProperties");
             case TABLE_CAPTION -> I18nUtil.get("plugin.desc.tableCaption");
             case TABLE_COLUMN_RESIZE -> I18nUtil.get("plugin.desc.tableColumnResize");
+            case TABLE_LAYOUT -> I18nUtil.get("plugin.desc.tableLayout");
             // Media
             case MEDIA_EMBED -> I18nUtil.get("plugin.desc.mediaEmbed");
             case HTML_EMBED -> I18nUtil.get("plugin.desc.htmlEmbed");

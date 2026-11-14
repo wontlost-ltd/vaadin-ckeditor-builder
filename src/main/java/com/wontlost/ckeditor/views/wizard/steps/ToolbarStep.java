@@ -190,20 +190,9 @@ public class ToolbarStep implements WizardStep {
     }
 
     // Premium plugins that need special configuration or containers (skip in toolbar preview)
-    private static final Set<String> PREMIUM_PLUGINS_TO_SKIP = Set.of(
-        "DocumentOutline",      // Requires container
-        "TableOfContents",      // Requires container
-        "AIAssistant",          // Requires AI adapter configuration
-        "Comments",             // Requires comments configuration
-        "TrackChanges",         // Requires collaboration configuration
-        "RevisionHistory",      // Requires collaboration configuration
-        "Pagination"            // Requires pagination configuration
-    );
+    // 与 PreviewExportStep 共用一份预览跳过规则（PluginCatalogue）
+    private static final Set<String> PREMIUM_PLUGINS_TO_SKIP = com.wontlost.ckeditor.domain.PluginCatalogue.PREMIUM_PREVIEW_SKIP;
 
-    // Standard plugins to skip (initialization issues)
-    private static final Set<String> STANDARD_PLUGINS_TO_SKIP = Set.of(
-        "Minimap"               // Requires editor DOM to be fully ready
-    );
 
     // Conflicting plugin pairs (mutually exclusive, cannot be enabled together)
     private static final Map<String, String> CONFLICTING_PLUGINS = Map.of(
@@ -237,8 +226,8 @@ public class ToolbarStep implements WizardStep {
         // Add user-selected plugins (skip problematic ones)
         for (CKEditorPlugin plugin : state.getSelectedPlugins()) {
             String pluginName = plugin.getJsName();
-            // Skip standard plugins that need special handling
-            if (STANDARD_PLUGINS_TO_SKIP.contains(pluginName)) {
+            // Skip preview-unsafe plugins and, without a license key, license-gated ones
+            if (!com.wontlost.ckeditor.domain.PluginCatalogue.isPreviewable(plugin, state.hasCommercialLicenseKey())) {
                 continue;
             }
             // Check plugin conflicts
