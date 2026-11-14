@@ -246,6 +246,18 @@ public class JavaCodeGenerator implements CodeGenerator {
               .append(state.getDependencyMode().name()).append(")");
         }
 
+        // 与实时预览使用同一套插件集：预设之外的选中项 addPlugin，预设中被取消的 removePlugin
+        for (CKEditorPlugin plugin : state.getSelectedPlugins()) {
+            if (!state.getPreset().hasPlugin(plugin)) {
+                sb.append("\n    .addPlugin(CKEditorPlugin.").append(plugin.name()).append(")");
+            }
+        }
+        for (CKEditorPlugin presetPlugin : state.getPreset().getPlugins()) {
+            if (!state.hasPlugin(presetPlugin)) {
+                sb.append("\n    .removePlugin(CKEditorPlugin.").append(presetPlugin.name()).append(")");
+            }
+        }
+
         // Premium Plugins
         for (CustomPluginConfig plugin : state.getPremiumPlugins()) {
             sb.append("\n    .addCustomPlugin(CustomPlugin.fromPremium(\"")
