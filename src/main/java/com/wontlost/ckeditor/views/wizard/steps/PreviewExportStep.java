@@ -51,20 +51,10 @@ import java.util.Map;
 public class PreviewExportStep implements WizardStep {
 
     // 需要特殊配置或容器的 Premium 插件（在普通预览中跳过）
-    private static final java.util.Set<String> PREMIUM_PLUGINS_TO_SKIP = java.util.Set.of(
-        "DocumentOutline",      // 需要容器
-        "TableOfContents",      // 需要容器
-        "AIAssistant",          // 需要 AI adapter 配置
-        "Comments",             // 需要 comments 配置
-        "TrackChanges",         // 需要协作配置
-        "RevisionHistory",      // 需要协作配置
-        "Pagination"            // 需要分页配置
-    );
+    // 预览跳过的 premium 插件与 ToolbarStep 共用一份（PluginCatalogue）
+    private static final java.util.Set<String> PREMIUM_PLUGINS_TO_SKIP =
+        com.wontlost.ckeditor.domain.PluginCatalogue.PREMIUM_PREVIEW_SKIP;
 
-    // 需要跳过的标准插件（初始化问题）
-    private static final java.util.Set<String> STANDARD_PLUGINS_TO_SKIP = java.util.Set.of(
-        "Minimap"               // 需要编辑器 DOM 完全就绪
-    );
 
     // 有冲突的插件对（互斥，不能同时启用）
     private static final java.util.Map<String, String> CONFLICTING_PLUGINS = java.util.Map.of(
@@ -410,8 +400,8 @@ public class PreviewExportStep implements WizardStep {
         // 添加用户选择的插件（跳过有问题的插件）
         for (CKEditorPlugin plugin : state.getSelectedPlugins()) {
             String pluginName = plugin.getJsName();
-            // 跳过需要特殊处理的标准插件
-            if (STANDARD_PLUGINS_TO_SKIP.contains(pluginName)) {
+            // 跳过预览不安全或（无 license key 时）license 门控的插件
+            if (!com.wontlost.ckeditor.domain.PluginCatalogue.isPreviewable(plugin, state.hasCommercialLicenseKey())) {
                 continue;
             }
             // 检查插件冲突
