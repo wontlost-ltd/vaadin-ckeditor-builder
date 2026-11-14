@@ -90,8 +90,8 @@ Releases are tag-driven. The `version` in `build.gradle` must match the tag, or
 CI's version-sync gate rejects the build:
 
 ```bash
-git tag -a v5.3.0 -m "v5.3.0"
-git push origin v5.3.0
+git tag -a v6.0.0 -m "v6.0.0"
+git push origin v6.0.0
 ```
 
 Pushes to `main` only run the tests; the image build and GitOps update are

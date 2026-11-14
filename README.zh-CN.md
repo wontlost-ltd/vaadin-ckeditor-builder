@@ -84,8 +84,8 @@ docker build -t vaadin-ckeditor-builder .
 否则 CI 的版本同步闸门会拒绝：
 
 ```bash
-git tag -a v5.3.0 -m "v5.3.0"
-git push origin v5.3.0
+git tag -a v6.0.0 -m "v6.0.0"
+git push origin v6.0.0
 ```
 
 `main` 推送只跑测试，不产出镜像；镜像与 GitOps 更新仅由 tag 触发。
