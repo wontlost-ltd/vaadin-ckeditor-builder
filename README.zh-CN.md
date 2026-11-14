@@ -24,10 +24,10 @@
 | 组件 | 版本 |
 |---|---|
 | Java | 21 |
-| Vaadin | 25.3.0 |
+| Vaadin | 25.3.5 |
 | Spring Boot | 4.1.1 |
-| ckeditor-vaadin | 5.5.0 |
-| CKEditor 5 | 48.5.2 |
+| ckeditor-vaadin | 6.0.0 |
+| CKEditor 5 | 49.1.0 |
 
 ## 快速开始
 
