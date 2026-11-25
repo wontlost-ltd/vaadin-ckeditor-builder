@@ -26,6 +26,7 @@ import com.wontlost.ckeditor.CKEditorPreset;
 import com.wontlost.ckeditor.CKEditorType;
 import com.wontlost.ckeditor.CustomPlugin;
 import com.wontlost.ckeditor.VaadinCKEditor;
+import com.wontlost.ckeditor.VaadinCKEditorBuilder;
 import static com.wontlost.ckeditor.JsonUtil.createObjectNode;
 import static com.wontlost.ckeditor.JsonUtil.createArrayNode;
 import tools.jackson.databind.node.ArrayNode;
@@ -445,8 +446,8 @@ public class PreviewExportStep implements WizardStep {
             addedPlugins.add(pluginName);
         }
 
-        // 使用用户配置的工具栏项目
-        List<String> toolbarItems = new ArrayList<>(state.getToolbarItems());
+        // 使用用户配置的工具栏项目（BALLOON / INLINE 去掉 addon 6.2 不支持的 fullscreen）
+        List<String> toolbarItems = new ArrayList<>(state.getEffectiveToolbarItems());
 
         // 添加 Premium 插件的工具栏项目（排除需要特殊配置的插件）
         for (BuilderState.CustomPluginConfig premiumConfig : state.getPremiumPlugins()) {
@@ -513,7 +514,16 @@ public class PreviewExportStep implements WizardStep {
             config.setTable(tableToolbar.toArray(new String[0]));
         }
 
+        // GHS 规则（addon 6.2 HtmlSupport）
+        if (state.isGhsEnabled()) {
+            config.setHtmlSupport(state.toHtmlSupport());
+        }
+
         builder.withConfig(config);
+        applyAddon62Options(builder, state.supportsFullscreen());
+        if (state.usesCodeBlockHighlighting()) {
+            builder.withCodeBlockHighlighting(state.getCodeHighlightTheme());
+        }
 
         VaadinCKEditor editor = builder.build();
 
@@ -524,6 +534,26 @@ public class PreviewExportStep implements WizardStep {
         applyCustomCss(editor);
 
         return editor;
+    }
+
+    /**
+     * 预览应用 addon 6.2 的全屏页面宽度与字数统计 / 上限（与 Java 导出一致）。
+     *
+     * @param fullscreenSupported 预览编辑器类型是否支持全屏（CLASSIC / DECOUPLED）
+     */
+    private void applyAddon62Options(VaadinCKEditorBuilder builder, boolean fullscreenSupported) {
+        if (fullscreenSupported) {
+            builder.withFullscreenPage(state.toFullscreenPage());
+        }
+        if (state.isWordCountVisible()) {
+            builder.withWordCountVisible(true);
+        }
+        if (state.getMaxWords() > 0) {
+            builder.withMaxWords(state.getMaxWords());
+        }
+        if (state.getMaxCharacters() > 0) {
+            builder.withMaxCharacters(state.getMaxCharacters());
+        }
     }
 
     /**
@@ -2972,6 +3002,9 @@ public class PreviewExportStep implements WizardStep {
             "bulletedList", "numberedList", "todoList",
             "outdent", "indent"
         });
+
+        // Document 预览固定为 DECOUPLED，始终支持全屏
+        applyAddon62Options(builder, true);
 
         VaadinCKEditor editor = builder.build();
 

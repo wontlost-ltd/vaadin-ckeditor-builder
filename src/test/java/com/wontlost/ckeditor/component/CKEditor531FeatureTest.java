@@ -2,6 +2,7 @@ package com.wontlost.ckeditor.component;
 
 import com.wontlost.ckeditor.CKEditorConfig;
 import com.wontlost.ckeditor.CKEditorPlugin;
+import com.wontlost.ckeditor.CKEditorPreset;
 import com.wontlost.ckeditor.VaadinCKEditor;
 import org.jsoup.safety.Safelist;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>类名保留 531 是历史原因（最初随 5.3.1 引入），断言均按 5.3.x 系列编写，
  * 补丁升级不会误报。
  */
-@DisplayName("ckeditor-vaadin 5.3.x 功能契约测试")
+@DisplayName("ckeditor-vaadin 5.3.x–6.2.x 功能契约测试")
 class CKEditor531FeatureTest {
 
     /**
@@ -163,13 +164,66 @@ class CKEditor531FeatureTest {
     class UpgradeBaseline {
 
         @Test
-        @DisplayName("getVersion 报告 6.0.x 系列")
-        void versionIs60x() {
-            // 用前缀断言而非精确版本，避免补丁升级（6.0.1…）成为维护噪音。
-            // 随 addon 升级到 6.0.0（CKEditor 49 / Vaadin 25.3.5）一并上移基线：这条断言的作用是挡住
+        @DisplayName("getVersion 报告 6.2.x 系列")
+        void versionIs62x() {
+            // 用前缀断言而非精确版本，避免补丁升级（6.2.1…）成为维护噪音。
+            // 随 addon 升级到 6.2.0（CKEditor 49.1 / Vaadin 25.3.5）一并上移基线：这条断言的作用是挡住
             // 意外的版本回退或依赖漂移，故须跟着「当前预期版本」走。
-            assertTrue(VaadinCKEditor.getVersion().startsWith("6.0"),
-                "VaadinCKEditor.getVersion 应为 6.0.x，实际：" + VaadinCKEditor.getVersion());
+            assertTrue(VaadinCKEditor.getVersion().startsWith("6.2"),
+                "VaadinCKEditor.getVersion 应为 6.2.x，实际：" + VaadinCKEditor.getVersion());
+        }
+
+        @Test
+        @DisplayName("6.2 目录校准：CKBox 归入 CKEditorPlugin 且为 premium feature，Pagination 工具栏项更正")
+        void catalogueCalibratedFor62() {
+            assertEquals("CKBox", CKEditorPlugin.CKBOX.getJsName());
+            assertTrue(CKEditorPlugin.CKBOX.isPremiumFeature());
+            assertTrue(CKEditorPlugin.TABLE_LAYOUT.isPremiumFeature());
+            assertFalse(CKEditorPlugin.BOLD.isPremiumFeature());
+            assertEquals("FullPage", CKEditorPlugin.FULL_PAGE.getJsName());
+            assertArrayEquals(new String[] {"previousPage", "nextPage", "pageNavigation"},
+                com.wontlost.ckeditor.VaadinCKEditorPremium.PremiumPlugin.PAGINATION.getToolbarItems());
+            assertFalse(CKEditorPreset.DOCUMENT.hasPlugin(CKEditorPlugin.TITLE), "6.2 起 DOCUMENT 预设不再列 TITLE");
+            assertFalse(CKEditorPreset.NOTION.hasPlugin(CKEditorPlugin.TITLE), "6.2 起 NOTION 预设不再列 TITLE");
+        }
+
+        @Test
+        @DisplayName("6.2 CKEditorConfig.set 展开点号路径为嵌套对象")
+        void dottedSetExpandsToNestedObjects() {
+            JsonNode json = new CKEditorConfig()
+                .set("ckbox.tokenUrl", "https://example.com/token")
+                .set("ai.assistant.adapter.openAI.apiUrl", "https://example.com/ai")
+                .toJson();
+            assertEquals("https://example.com/token", json.get("ckbox").get("tokenUrl").asText());
+            assertEquals("https://example.com/ai",
+                json.get("ai").get("assistant").get("adapter").get("openAI").get("apiUrl").asText());
+        }
+
+        @Test
+        @DisplayName("6.2 setHtmlSupport(true) 等同 HtmlSupport.allowAll()，默认禁止 script / iframe / on*")
+        void htmlSupportAllowAllKeepsSafeDisallows() {
+            JsonNode htmlSupport = new CKEditorConfig().setHtmlSupport(true).toJson().get("htmlSupport");
+            assertEquals(com.wontlost.ckeditor.HtmlSupport.allowAll().toJson(), htmlSupport);
+            assertTrue(htmlSupport.get("disallow").toString().contains("script"), htmlSupport.toString());
+        }
+
+        @Test
+        @DisplayName("6.2 全屏默认 A4_FIT，自定义宽度拒绝非 CSS 长度")
+        void fullscreenPageDefaultsAndValidation() {
+            VaadinCKEditor editor = VaadinCKEditor.create().build();
+            assertEquals(com.wontlost.ckeditor.FullscreenPage.A4_FIT, editor.getFullscreenPage());
+            assertDoesNotThrow(() -> com.wontlost.ckeditor.FullscreenPage.custom("min(1400px, 90%)"));
+            assertThrows(IllegalArgumentException.class,
+                () -> com.wontlost.ckeditor.FullscreenPage.custom("red; background:url(x)"));
+        }
+
+        @Test
+        @DisplayName("6.2 HeadingOption 重复 model 立即抛 IllegalArgumentException，withModel 可区分同级变体")
+        void duplicateHeadingModelsRejected() {
+            CKEditorConfig.HeadingOption h1 = CKEditorConfig.HeadingOption.heading(1, "Heading 1", "ck-heading_heading1");
+            CKEditorConfig.HeadingOption h1Again = CKEditorConfig.HeadingOption.heading(1, "Title", "ck-heading_title");
+            assertThrows(IllegalArgumentException.class, () -> new CKEditorConfig().setHeading(h1, h1Again));
+            assertDoesNotThrow(() -> new CKEditorConfig().setHeading(h1, h1Again.withModel("headingTitle")));
         }
 
         @Test

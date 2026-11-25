@@ -74,6 +74,11 @@ public class TypeScriptCodeGenerator implements CodeGenerator {
         sb.append("  language: string;\n");
         sb.append("  width: string;\n");
         sb.append("  height: string;\n");
+        sb.append("  /** ckeditor-vaadin 6.2 FullscreenPage mode (null on BALLOON / INLINE, which have no fullscreen) */\n");
+        sb.append("  fullscreenPage: 'a4-fit' | 'a4' | 'full-width' | 'custom' | null;\n");
+        sb.append("  fullscreenPageWidth?: string;\n");
+        sb.append("  wordCount: { visible: boolean; maxWords: number; maxCharacters: number };\n");
+        sb.append("  codeBlockHighlighting: string | null;\n");
         sb.append("}\n\n");
     }
 
@@ -86,8 +91,23 @@ public class TypeScriptCodeGenerator implements CodeGenerator {
         sb.append("  type: '").append(state.getEditorType().name()).append("' as CKEditorType,\n");
         sb.append("  theme: '").append(state.getTheme().name()).append("' as CKEditorTheme,\n");
         sb.append("  language: '").append(escapeSingleQuoteString(state.getLanguage())).append("',\n");
-        sb.append("  width: '100%',\n");
-        sb.append("  height: '400px',\n");
+        sb.append("  width: '").append(escapeSingleQuoteString(state.getEditorWidth())).append("',\n");
+        sb.append("  height: '").append(escapeSingleQuoteString(state.getEditorHeight())).append("',\n");
+        if (state.supportsFullscreen()) {
+            var page = state.toFullscreenPage();
+            sb.append("  fullscreenPage: '").append(page.getMode()).append("',\n");
+            if (page.getCssWidth() != null) {
+                sb.append("  fullscreenPageWidth: '").append(escapeSingleQuoteString(page.getCssWidth())).append("',\n");
+            }
+        } else {
+            sb.append("  fullscreenPage: null,\n");
+        }
+        sb.append("  wordCount: { visible: ").append(state.isWordCountVisible())
+          .append(", maxWords: ").append(state.getMaxWords())
+          .append(", maxCharacters: ").append(state.getMaxCharacters()).append(" },\n");
+        sb.append("  codeBlockHighlighting: ")
+          .append(state.usesCodeBlockHighlighting() ? "'" + state.getCodeHighlightTheme().getJsName() + "'" : "null")
+          .append(",\n");
         sb.append("};\n");
     }
 
@@ -114,8 +134,8 @@ public class TypeScriptCodeGenerator implements CodeGenerator {
         sb.append("const toolbar = {\n");
         sb.append("  items: [\n");
 
-        if (!state.getToolbarItems().isEmpty()) {
-            List<String> items = state.getToolbarItems().stream()
+        if (!state.getEffectiveToolbarItems().isEmpty()) {
+            List<String> items = state.getEffectiveToolbarItems().stream()
                 .map(t -> "    '" + escapeSingleQuoteString(t) + "'")
                 .collect(Collectors.toList());
             sb.append(String.join(",\n", items));

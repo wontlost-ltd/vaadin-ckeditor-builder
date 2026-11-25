@@ -4,6 +4,9 @@ import com.wontlost.ckeditor.CKEditorPlugin;
 import com.wontlost.ckeditor.CKEditorPreset;
 import com.wontlost.ckeditor.CKEditorTheme;
 import com.wontlost.ckeditor.CKEditorType;
+import com.wontlost.ckeditor.CodeHighlightTheme;
+import com.wontlost.ckeditor.FullscreenPage;
+import com.wontlost.ckeditor.HtmlSupport;
 import com.wontlost.ckeditor.i18n.I18nUtil;
 
 import java.io.Serializable;
@@ -118,6 +121,25 @@ public class BuilderState implements Serializable {
 
         public String getDisplayName() { return I18nUtil.get(displayNameKey); }
         public String getDescription() { return I18nUtil.get(descriptionKey); }
+    }
+
+    /**
+     * 全屏页面宽度模式，对应 addon 6.2 的 {@link FullscreenPage}（默认 A4_FIT）。
+     * CUSTOM 使用 {@link #getFullscreenCustomWidth()} 中的 CSS 宽度。
+     */
+    public enum FullscreenPageMode {
+        A4_FIT("enum.fullscreenPage.a4Fit"),
+        A4("enum.fullscreenPage.a4"),
+        FULL_WIDTH("enum.fullscreenPage.fullWidth"),
+        CUSTOM("enum.fullscreenPage.custom");
+
+        private final String displayNameKey;
+
+        FullscreenPageMode(String displayNameKey) {
+            this.displayNameKey = displayNameKey;
+        }
+
+        public String getDisplayName() { return I18nUtil.get(displayNameKey); }
     }
 
     /**
@@ -331,6 +353,17 @@ public class BuilderState implements Serializable {
     private boolean documentOutlineEnabled = false;
     private boolean minimapEnabled = false;
     private DependencyMode dependencyMode = DependencyMode.AUTO_RESOLVE;
+    // GHS 允许的元素（空 = 全部元素，即 HtmlSupport.allowAll()）；仅在 ghsEnabled 时生效
+    private List<String> htmlSupportAllowedElements = new ArrayList<>();
+
+    // Advanced Config - addon 6.2 新功能
+    private FullscreenPageMode fullscreenPageMode = FullscreenPageMode.A4_FIT;
+    private String fullscreenCustomWidth = "";
+    private boolean wordCountVisible = false;
+    private int maxWords = 0;       // 0 = 不限制
+    private int maxCharacters = 0;  // 0 = 不限制
+    private boolean codeBlockHighlighting = false;
+    private CodeHighlightTheme codeHighlightTheme = CodeHighlightTheme.AUTO;
 
     // Advanced Config - Size
     private String editorWidth = "100%";
@@ -427,6 +460,16 @@ public class BuilderState implements Serializable {
         this.documentOutlineEnabled = false;
         this.minimapEnabled = false;
         this.dependencyMode = DependencyMode.AUTO_RESOLVE;
+        this.htmlSupportAllowedElements = new ArrayList<>();
+
+        // addon 6.2 features reset
+        this.fullscreenPageMode = FullscreenPageMode.A4_FIT;
+        this.fullscreenCustomWidth = "";
+        this.wordCountVisible = false;
+        this.maxWords = 0;
+        this.maxCharacters = 0;
+        this.codeBlockHighlighting = false;
+        this.codeHighlightTheme = CodeHighlightTheme.AUTO;
 
         // Size config reset
         this.editorWidth = "100%";
@@ -861,6 +904,120 @@ public class BuilderState implements Serializable {
     public void setDependencyMode(DependencyMode dependencyMode) {
         this.dependencyMode = dependencyMode;
         notifyListeners();
+    }
+
+    public List<String> getHtmlSupportAllowedElements() { return htmlSupportAllowedElements; }
+    public void setHtmlSupportAllowedElements(List<String> elements) {
+        this.htmlSupportAllowedElements = elements != null
+            ? elements.stream().map(String::trim).filter(e -> !e.isEmpty()).collect(java.util.stream.Collectors.toCollection(ArrayList::new))
+            : new ArrayList<>();
+        notifyListeners();
+    }
+
+    /**
+     * GHS 规则（addon 6.2 的 {@link HtmlSupport}）：未列元素时为 {@link HtmlSupport#allowAll()}，
+     * 否则只允许所列元素（含全部属性、类名与样式）。两者都保留 addon 默认的
+     * {@code <script>} / {@code <iframe>} / {@code on*} 禁止规则。
+     *
+     * @throws IllegalArgumentException 元素名不合法时（由 {@link HtmlSupport.Rule} 校验）
+     */
+    public HtmlSupport toHtmlSupport() {
+        if (htmlSupportAllowedElements.isEmpty()) {
+            return HtmlSupport.allowAll();
+        }
+        return HtmlSupport.create().allow(
+            HtmlSupport.Rule.elements(htmlSupportAllowedElements.toArray(new String[0]))
+                .attributes(true).classes(true).styles(true));
+    }
+
+    // ========== addon 6.2: fullscreen / word count / code highlighting ==========
+
+    public FullscreenPageMode getFullscreenPageMode() { return fullscreenPageMode; }
+    public void setFullscreenPageMode(FullscreenPageMode mode) {
+        this.fullscreenPageMode = mode != null ? mode : FullscreenPageMode.A4_FIT;
+        notifyListeners();
+    }
+
+    public String getFullscreenCustomWidth() { return fullscreenCustomWidth; }
+    public void setFullscreenCustomWidth(String width) {
+        this.fullscreenCustomWidth = width != null ? width.trim() : "";
+        notifyListeners();
+    }
+
+    /**
+     * 当前选择对应的 addon {@link FullscreenPage}。CUSTOM 宽度为空时回退到默认 A4_FIT；
+     * 非法 CSS 宽度由 {@link FullscreenPage#custom(String)} 抛出 IllegalArgumentException。
+     */
+    public FullscreenPage toFullscreenPage() {
+        return switch (fullscreenPageMode) {
+            case A4_FIT -> FullscreenPage.A4_FIT;
+            case A4 -> FullscreenPage.A4;
+            case FULL_WIDTH -> FullscreenPage.FULL_WIDTH;
+            case CUSTOM -> fullscreenCustomWidth.isEmpty()
+                ? FullscreenPage.A4_FIT : FullscreenPage.custom(fullscreenCustomWidth);
+        };
+    }
+
+    /** CKEditor 全屏只支持 CLASSIC 与 DECOUPLED；BALLOON / INLINE 上 addon 6.2 不加载 Fullscreen 插件与按钮。 */
+    public boolean supportsFullscreen() {
+        return editorType == CKEditorType.CLASSIC || editorType == CKEditorType.DECOUPLED;
+    }
+
+    /** 全屏页面设置是否会产生效果：选了 Fullscreen 插件、编辑器类型支持全屏、且不是默认值。 */
+    public boolean hasCustomFullscreenPage() {
+        return supportsFullscreen() && hasPlugin(CKEditorPlugin.FULLSCREEN)
+            && !FullscreenPage.A4_FIT.equals(toFullscreenPage());
+    }
+
+    /**
+     * 导出与预览使用的工具栏：BALLOON / INLINE 去掉 addon 6.2 会静默移除的 {@code fullscreen} 项，
+     * 让导出代码与实际效果一致。
+     */
+    public List<String> getEffectiveToolbarItems() {
+        if (supportsFullscreen()) {
+            return getToolbarItems();
+        }
+        return toolbarItems.stream().filter(item -> !"fullscreen".equals(item)).toList();
+    }
+
+    public boolean isWordCountVisible() { return wordCountVisible; }
+    public void setWordCountVisible(boolean visible) {
+        this.wordCountVisible = visible;
+        notifyListeners();
+    }
+
+    public int getMaxWords() { return maxWords; }
+    public void setMaxWords(int maxWords) {
+        this.maxWords = Math.max(0, maxWords);
+        notifyListeners();
+    }
+
+    public int getMaxCharacters() { return maxCharacters; }
+    public void setMaxCharacters(int maxCharacters) {
+        this.maxCharacters = Math.max(0, maxCharacters);
+        notifyListeners();
+    }
+
+    /** 是否用到 addon 6.2 的字数统计（显示计数或设置了上限）。 */
+    public boolean usesWordCount() {
+        return wordCountVisible || maxWords > 0 || maxCharacters > 0;
+    }
+
+    public boolean isCodeBlockHighlighting() { return codeBlockHighlighting; }
+    public void setCodeBlockHighlighting(boolean enabled) {
+        this.codeBlockHighlighting = enabled;
+        notifyListeners();
+    }
+
+    public CodeHighlightTheme getCodeHighlightTheme() { return codeHighlightTheme; }
+    public void setCodeHighlightTheme(CodeHighlightTheme theme) {
+        this.codeHighlightTheme = theme != null ? theme : CodeHighlightTheme.AUTO;
+        notifyListeners();
+    }
+
+    /** 代码块高亮只在选了 CodeBlock 插件时有意义。 */
+    public boolean usesCodeBlockHighlighting() {
+        return codeBlockHighlighting && hasPlugin(CKEditorPlugin.CODE_BLOCK);
     }
 
     // ========== Size Config ==========

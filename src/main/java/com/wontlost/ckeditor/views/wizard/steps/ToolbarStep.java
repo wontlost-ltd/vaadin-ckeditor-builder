@@ -380,6 +380,11 @@ public class ToolbarStep implements WizardStep {
             }
         }
 
+        // addon 6.2 在 BALLOON / INLINE 上不加载 Fullscreen 插件并移除 fullscreen 项：排序预览与之一致
+        if (!state.supportsFullscreen()) {
+            toolbarItems.remove("fullscreen");
+        }
+
         return toolbarItems;
     }
 
