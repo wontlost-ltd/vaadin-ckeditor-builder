@@ -70,15 +70,18 @@ public final class PluginCatalogue {
     private static final Set<CKEditorPlugin> LICENSE_GATED = Set.of(CKEditorPlugin.TABLE_LAYOUT);
 
     /**
-     * 不进实时预览的免费包插件：Minimap 需要编辑器 DOM 完全就绪；CKBox 需要付费 CKBox 服务
-     * （{@code ckbox.tokenUrl} 与 CKBox JS 库），向导不提供这些配置。导出代码不受影响。
+     * 需要付费服务（而不只是 license plan）的 premium feature：CKBox（{@code ckbox.tokenUrl} 与 CKBox JS 库）
+     * 与 CKFinder（{@code ckfinder.uploadUrl} 与 CKFinder 服务端）。向导不提供这些配置，故不进实时预览。
      */
-    private static final Set<CKEditorPlugin> PREVIEW_UNSAFE = Set.of(
-        CKEditorPlugin.MINIMAP, CKEditorPlugin.CKBOX, CKEditorPlugin.CKBOX_IMAGE_EDIT);
-
-    /** 需要付费服务（而不只是 license plan）的 premium feature：CKBox 与 CKFinder。 */
     private static final Set<CKEditorPlugin> PAID_SERVICE = Set.of(
         CKEditorPlugin.CKBOX, CKEditorPlugin.CKBOX_IMAGE_EDIT, CKEditorPlugin.CKFINDER);
+
+    /**
+     * 不进实时预览的免费包插件：Minimap 需要编辑器 DOM 完全就绪，以及全部付费服务插件。导出代码不受影响。
+     */
+    private static final Set<CKEditorPlugin> PREVIEW_UNSAFE = java.util.stream.Stream.concat(
+            Set.of(CKEditorPlugin.MINIMAP).stream(), PAID_SERVICE.stream())
+        .collect(java.util.stream.Collectors.toUnmodifiableSet());
 
     /**
      * 插件卡片上的 premium 标记文案 key：addon 6.2 的 {@link CKEditorPlugin#isPremiumFeature()} 为真时，

@@ -69,10 +69,14 @@ class PluginCatalogueTest {
     }
 
     @Test
-    @DisplayName("CKBox 需要付费服务配置，不进实时预览")
-    void ckboxIsNotPreviewed() {
-        assertFalse(PluginCatalogue.isPreviewable(CKEditorPlugin.CKBOX, true));
-        assertFalse(PluginCatalogue.isPreviewable(CKEditorPlugin.CKBOX_IMAGE_EDIT, true));
+    @DisplayName("付费服务插件（CKBox / CKFinder）需要服务端配置，不进实时预览，与标记文案一致")
+    void paidServicePluginsAreNotPreviewed() {
+        for (CKEditorPlugin plugin : CKEditorPlugin.values()) {
+            if ("plugin.badge.paidService".equals(PluginCatalogue.premiumBadgeKey(plugin))) {
+                assertFalse(PluginCatalogue.isPreviewable(plugin, true), plugin.name());
+            }
+        }
+        assertFalse(PluginCatalogue.isPreviewable(CKEditorPlugin.CKFINDER, true));
         assertTrue(PluginCatalogue.isPreviewable(CKEditorPlugin.FULL_PAGE, false));
     }
 
