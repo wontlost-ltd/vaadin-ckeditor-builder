@@ -107,19 +107,10 @@ public class JsonConfigGenerator implements CodeGenerator {
         sb.append("  \"toolbar\": {\n");
         sb.append("    \"items\": [\n");
 
-        List<String> toolbarItems;
-        if (!state.getEffectiveToolbarItems().isEmpty()) {
-            toolbarItems = state.getEffectiveToolbarItems().stream()
-                .map(t -> "      \"" + escapeJson(t) + "\"")
-                .collect(Collectors.toList());
-        } else {
-            // Generate default toolbar based on plugins
-            toolbarItems = state.getSelectedPlugins().stream()
-                .flatMap(p -> p.getToolbarItems().stream())
-                .distinct()
-                .map(t -> "      \"" + escapeJson(t) + "\"")
-                .collect(Collectors.toList());
-        }
+        // 未自定义时由插件推导；BALLOON / INLINE 去掉 fullscreen
+        List<String> toolbarItems = state.getEffectiveToolbarItemsOrDerived().stream()
+            .map(t -> "      \"" + escapeJson(t) + "\"")
+            .collect(Collectors.toList());
         sb.append(String.join(",\n", toolbarItems));
 
         sb.append("\n    ],\n");

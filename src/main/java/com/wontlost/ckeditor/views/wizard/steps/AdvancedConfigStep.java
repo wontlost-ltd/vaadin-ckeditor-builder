@@ -492,16 +492,43 @@ public class AdvancedConfigStep implements WizardStep {
         field.addValueChangeListener(e -> {
             if (state == null) return;
             List<String> elements = splitList(e.getValue());
-            try {
-                elements.forEach(HtmlSupport.Rule::element);
-                field.setInvalid(false);
+            // 非法元素名不写入 state，由 validate() 阻止进入下一步
+            boolean valid = areValidElementNames(elements);
+            setInvalid(field, !valid, "step6.htmlSupportElements.invalid");
+            if (valid) {
                 state.setHtmlSupportAllowedElements(elements);
-            } catch (IllegalArgumentException ex) {
-                field.setErrorMessage(I18nUtil.get("step6.htmlSupportElements.invalid"));
-                field.setInvalid(true);
             }
         });
         return field;
+    }
+
+    private static boolean areValidElementNames(List<String> elements) {
+        try {
+            elements.forEach(HtmlSupport.Rule::element);
+            return true;
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
+    }
+
+    /** 空串视为「未填写」（CUSTOM 时由 validate() 报错），其余交给 addon 的 FullscreenPage.custom 校验。 */
+    private static boolean isValidCustomWidth(String width) {
+        if (width.isEmpty()) {
+            return true;
+        }
+        try {
+            FullscreenPage.custom(width);
+            return true;
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
+    }
+
+    private static void setInvalid(TextField field, boolean invalid, String messageKey) {
+        if (invalid) {
+            field.setErrorMessage(I18nUtil.get(messageKey));
+        }
+        field.setInvalid(invalid);
     }
 
     private static List<String> splitList(String value) {
@@ -526,15 +553,11 @@ public class AdvancedConfigStep implements WizardStep {
         fullscreenCustomWidthField.addValueChangeListener(e -> {
             if (state == null) return;
             String width = e.getValue() == null ? "" : e.getValue().trim();
-            try {
-                if (!width.isEmpty()) {
-                    FullscreenPage.custom(width);
-                }
-                fullscreenCustomWidthField.setInvalid(false);
+            // 非法值不写入 state（state 中只保存 FullscreenPage.custom 接受的宽度），由 validate() 阻止进入下一步
+            boolean valid = isValidCustomWidth(width);
+            setInvalid(fullscreenCustomWidthField, !valid, "step6.fullscreenCustomWidth.invalid");
+            if (valid) {
                 state.setFullscreenCustomWidth(width);
-            } catch (IllegalArgumentException ex) {
-                fullscreenCustomWidthField.setErrorMessage(I18nUtil.get("step6.fullscreenCustomWidth.invalid"));
-                fullscreenCustomWidthField.setInvalid(true);
             }
         });
 
@@ -546,7 +569,9 @@ public class AdvancedConfigStep implements WizardStep {
         fullscreenPageComboBox.addValueChangeListener(e -> {
             if (state != null && e.getValue() != null) {
                 state.setFullscreenPageMode(e.getValue());
-                fullscreenCustomWidthField.setVisible(e.getValue() == FullscreenPageMode.CUSTOM);
+                boolean custom = e.getValue() == FullscreenPageMode.CUSTOM;
+                fullscreenCustomWidthField.setVisible(custom);
+                fullscreenCustomWidthField.setRequired(custom);
             }
         });
 
@@ -846,6 +871,7 @@ public class AdvancedConfigStep implements WizardStep {
         fullscreenPageComboBox.setValue(state.getFullscreenPageMode());
         fullscreenCustomWidthField.setValue(state.getFullscreenCustomWidth());
         fullscreenCustomWidthField.setVisible(state.getFullscreenPageMode() == FullscreenPageMode.CUSTOM);
+        fullscreenCustomWidthField.setRequired(state.getFullscreenPageMode() == FullscreenPageMode.CUSTOM);
         updateFullscreenAvailability();
 
         // Size
@@ -876,6 +902,17 @@ public class AdvancedConfigStep implements WizardStep {
 
     @Override
     public ValidationResult validate(BuilderState state) {
+        // 新选项的输入未通过校验时阻止前进（错误优先于下面的警告），避免导出与表单显示不一致
+        if (state.isGhsEnabled() && htmlSupportElementsField != null && htmlSupportElementsField.isInvalid()) {
+            return ValidationResult.error(I18nUtil.get("step6.htmlSupportElements.invalid"));
+        }
+        if (state.getFullscreenPageMode() == FullscreenPageMode.CUSTOM && state.supportsFullscreen()
+                && state.hasPlugin(CKEditorPlugin.FULLSCREEN)
+                && (state.getFullscreenCustomWidth().isEmpty()
+                    || (fullscreenCustomWidthField != null && fullscreenCustomWidthField.isInvalid()))) {
+            return ValidationResult.error(I18nUtil.get("step6.fullscreenCustomWidth.invalid"));
+        }
+
         // Check upload URL format
         String uploadUrl = state.getSimpleUploadUrl();
         if (uploadUrl != null && !uploadUrl.isEmpty()) {

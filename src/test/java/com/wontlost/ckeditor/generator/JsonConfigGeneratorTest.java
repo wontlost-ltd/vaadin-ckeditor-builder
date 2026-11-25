@@ -62,4 +62,27 @@ class JsonConfigGeneratorTest {
         assertTrue(ts.contains("fullscreenPage: null"), ts);
         assertFalse(ts.contains("'fullscreen'"), ts);
     }
+
+    @Test
+    @DisplayName("BALLOON：自定义工具栏与由插件推导的回退列表都去掉 fullscreen")
+    void derivedToolbarFallbackDropsFullscreen() {
+        BuilderState state = new BuilderState();
+        state.setAutoGenerateToolbar(false);
+        state.addPlugin(CKEditorPlugin.FULLSCREEN);
+        state.setToolbarItems(List.of("fullscreen"));
+        state.setEditorType(CKEditorType.BALLOON);
+        assertTrue(state.getEffectiveToolbarItems().isEmpty());
+
+        String json = new JsonConfigGenerator().generate(state);
+        new ObjectMapper().readTree(json);
+        assertFalse(json.contains("\"fullscreen\""), json);
+        assertFalse(new TypeScriptCodeGenerator().generate(state).contains("'fullscreen'"));
+
+        // 未自定义工具栏：由插件推导，同样去掉 fullscreen
+        state.setToolbarItems(List.of());
+        String derived = new JsonConfigGenerator().generate(state);
+        assertTrue(derived.contains("\"bold\""), "回退到插件推导的工具栏：" + derived);
+        assertFalse(derived.contains("\"fullscreen\""), derived);
+        assertFalse(new TypeScriptCodeGenerator().generate(state).contains("'fullscreen'"));
+    }
 }

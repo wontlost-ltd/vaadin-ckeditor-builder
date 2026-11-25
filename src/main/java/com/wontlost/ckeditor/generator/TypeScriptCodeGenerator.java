@@ -134,20 +134,11 @@ public class TypeScriptCodeGenerator implements CodeGenerator {
         sb.append("const toolbar = {\n");
         sb.append("  items: [\n");
 
-        if (!state.getEffectiveToolbarItems().isEmpty()) {
-            List<String> items = state.getEffectiveToolbarItems().stream()
-                .map(t -> "    '" + escapeSingleQuoteString(t) + "'")
-                .collect(Collectors.toList());
-            sb.append(String.join(",\n", items));
-        } else {
-            // Generate default toolbar based on plugins
-            List<String> defaultItems = state.getSelectedPlugins().stream()
-                .flatMap(p -> p.getToolbarItems().stream())
-                .distinct()
-                .map(t -> "    '" + escapeSingleQuoteString(t) + "'")
-                .collect(Collectors.toList());
-            sb.append(String.join(",\n", defaultItems));
-        }
+        // 未自定义时由插件推导；BALLOON / INLINE 去掉 fullscreen
+        List<String> items = state.getEffectiveToolbarItemsOrDerived().stream()
+            .map(t -> "    '" + escapeSingleQuoteString(t) + "'")
+            .collect(Collectors.toList());
+        sb.append(String.join(",\n", items));
 
         sb.append("\n  ],\n");
         sb.append("  shouldNotGroupWhenFull: true  // Set to false for single-line mode\n");

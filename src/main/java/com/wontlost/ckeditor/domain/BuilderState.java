@@ -980,6 +980,18 @@ public class BuilderState implements Serializable {
         return toolbarItems.stream().filter(item -> !"fullscreen".equals(item)).toList();
     }
 
+    /**
+     * JSON / TypeScript 导出的工具栏：未自定义时由所选插件推导；与 {@link #getEffectiveToolbarItems()} 一样
+     * 在 BALLOON / INLINE 上去掉 {@code fullscreen}（推导出的列表同样过滤）。
+     */
+    public List<String> getEffectiveToolbarItemsOrDerived() {
+        List<String> items = toolbarItems.isEmpty()
+            ? selectedPlugins.stream().flatMap(p -> p.getToolbarItems().stream()).distinct().toList()
+            : toolbarItems;
+        return supportsFullscreen() ? List.copyOf(items)
+            : items.stream().filter(item -> !"fullscreen".equals(item)).toList();
+    }
+
     public boolean isWordCountVisible() { return wordCountVisible; }
     public void setWordCountVisible(boolean visible) {
         this.wordCountVisible = visible;
