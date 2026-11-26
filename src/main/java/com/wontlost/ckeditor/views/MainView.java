@@ -21,6 +21,7 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.wontlost.ckeditor.i18n.I18nUtil;
 import com.wontlost.ckeditor.i18n.LanguageSwitcher;
 import com.wontlost.ckeditor.theme.ThemeSwitcher;
+import com.wontlost.ckeditor.utils.AppVersion;
 import com.wontlost.ckeditor.utils.Constant;
 
 /**
@@ -65,7 +66,7 @@ public class MainView extends AppLayout {
             .set("white-space", "nowrap");
 
         // 版本标签
-        Span version = new Span("v5.3.*");
+        Span version = new Span(AppVersion.badge());
         version.addClassName("version-badge");
         version.getStyle()
             .set("font-size", "11px")
