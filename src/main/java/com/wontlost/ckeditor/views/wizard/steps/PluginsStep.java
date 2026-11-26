@@ -17,6 +17,7 @@ import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.wontlost.ckeditor.CKEditorPlugin;
 import com.wontlost.ckeditor.domain.BuilderState;
+import com.wontlost.ckeditor.domain.PluginCatalogue;
 import com.wontlost.ckeditor.domain.ValidationResult;
 import com.wontlost.ckeditor.domain.WizardStep;
 import com.wontlost.ckeditor.i18n.I18nUtil;
@@ -274,7 +275,19 @@ public class PluginsStep implements WizardStep {
         checkIcon.setSize("14px");
         checkIndicator.add(checkIcon);
 
-        card.add(checkIndicator, name, description);
+        card.add(checkIndicator, name);
+
+        // addon 6.2 isPremiumFeature()：开源 ckeditor5 包导出、但 CKEditor 标为 premium feature 的插件
+        String badgeKey = PluginCatalogue.premiumBadgeKey(plugin);
+        if (badgeKey != null) {
+            Span badge = new Span(I18nUtil.get(badgeKey));
+            badge.addClassName("plugin-card-premium");
+            badge.getElement().setAttribute("title", I18nUtil.get(badgeKey + ".tooltip"));
+            card.add(badge);
+            card.addClassName("premium-feature");
+        }
+
+        card.add(description);
 
         // Click to toggle selection
         card.addClickListener(e -> {
@@ -347,6 +360,8 @@ public class PluginsStep implements WizardStep {
             case EASY_IMAGE -> I18nUtil.get("plugin.desc.easyImage");
             // Upload
             case SIMPLE_UPLOAD_ADAPTER -> I18nUtil.get("plugin.desc.simpleUploadAdapter");
+            case CKBOX -> I18nUtil.get("plugin.desc.ckbox");
+            case CKBOX_IMAGE_EDIT -> I18nUtil.get("plugin.desc.ckboxImageEdit");
             case CLOUD_SERVICES -> I18nUtil.get("plugin.desc.cloudServices");
             case CLOUD_SERVICES_CORE -> I18nUtil.get("plugin.desc.cloudServicesCore");
             case CLOUD_SERVICES_UPLOAD_ADAPTER -> I18nUtil.get("plugin.desc.cloudServicesUploadAdapter");
@@ -380,6 +395,13 @@ public class PluginsStep implements WizardStep {
             case HIGHLIGHT -> I18nUtil.get("plugin.desc.highlight");
             case TEXT_PART_LANGUAGE -> I18nUtil.get("plugin.desc.textPartLanguage");
             case MINIMAP -> I18nUtil.get("plugin.desc.minimap");
+            case FULLSCREEN -> I18nUtil.get("plugin.desc.fullscreen");
+            // Document
+            case WORD_COUNT -> I18nUtil.get("plugin.desc.wordCount");
+            case TITLE -> I18nUtil.get("plugin.desc.title");
+            // HTML
+            case GENERAL_HTML_SUPPORT -> I18nUtil.get("plugin.desc.generalHtmlSupport");
+            case FULL_PAGE -> I18nUtil.get("plugin.desc.fullPage");
             // Mention
             case MENTION -> I18nUtil.get("plugin.desc.mention");
             default -> "";

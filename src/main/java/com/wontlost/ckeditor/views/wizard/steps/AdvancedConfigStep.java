@@ -20,7 +20,14 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import com.wontlost.ckeditor.CKEditorPlugin;
+import com.wontlost.ckeditor.CodeHighlightTheme;
+import com.wontlost.ckeditor.FullscreenPage;
+import com.wontlost.ckeditor.HtmlSupport;
 import com.wontlost.ckeditor.domain.BuilderState;
+import com.wontlost.ckeditor.domain.BuilderState.FullscreenPageMode;
+import com.wontlost.ckeditor.domain.PluginCatalogue;
+import com.wontlost.ckeditor.domain.PluginCatalogue.PremiumEntry;
 import com.wontlost.ckeditor.domain.BuilderState.CustomPluginConfig;
 import com.wontlost.ckeditor.domain.BuilderState.DependencyMode;
 import com.wontlost.ckeditor.domain.BuilderState.FallbackMode;
@@ -44,7 +51,6 @@ public class AdvancedConfigStep implements WizardStep {
 
     // Premium configuration components
     private FlexLayout premiumPluginsList;
-    private String[][] premiumPluginDefinitions;
 
     // Editor config components
     private TextField placeholderField;
@@ -66,6 +72,14 @@ public class AdvancedConfigStep implements WizardStep {
     private Checkbox readOnlyCheckbox;
     private Checkbox viewOnlyCheckbox;
     private Checkbox ghsEnabledCheckbox;
+    private TextField htmlSupportElementsField;
+    private Checkbox codeHighlightingCheckbox;
+    private ComboBox<CodeHighlightTheme> codeHighlightThemeComboBox;
+    private Checkbox wordCountVisibleCheckbox;
+    private IntegerField maxWordsField;
+    private IntegerField maxCharactersField;
+    private ComboBox<FullscreenPageMode> fullscreenPageComboBox;
+    private TextField fullscreenCustomWidthField;
     private Checkbox minimapEnabledCheckbox;
     private ComboBox<FallbackMode> fallbackModeComboBox;
     private ComboBox<SanitizationPolicy> sanitizationPolicyComboBox;
@@ -212,15 +226,9 @@ public class AdvancedConfigStep implements WizardStep {
         premiumPluginsList.setFlexWrap(FlexLayout.FlexWrap.WRAP);
         premiumPluginsList.addClassName("plugin-cards-container");
 
-        // premium 目录集中在 PluginCatalogue（名字由单测与 addon 的 PremiumPlugin 对齐）
-        premiumPluginDefinitions = com.wontlost.ckeditor.domain.PluginCatalogue.PREMIUM.stream()
-            .map(e -> new String[] {e.name(), e.descriptionKey(), e.toolbarItem()})
-            .toArray(String[][]::new);
-
-        for (String[] pluginDef : premiumPluginDefinitions) {
-            // pluginDef[1] is now an i18n key, so we use I18nUtil.get() to get the translated description
-            Div pluginCard = createPremiumPluginCard(pluginDef[0], I18nUtil.get(pluginDef[1]), pluginDef[2]);
-            premiumPluginsList.add(pluginCard);
+        // premium 目录集中在 PluginCatalogue（名字与工具栏项由单测与 addon 的 PremiumPlugin 对齐）
+        for (PremiumEntry entry : PluginCatalogue.PREMIUM) {
+            premiumPluginsList.add(createPremiumPluginCard(entry));
         }
 
         // Premium feature hint
@@ -242,22 +250,13 @@ public class AdvancedConfigStep implements WizardStep {
      * Select all Premium plugins
      */
     private void selectAllPremiumPlugins() {
-        if (state == null || premiumPluginDefinitions == null) return;
+        if (state == null) return;
 
-        for (String[] pluginDef : premiumPluginDefinitions) {
-            String name = pluginDef[0];
-            String toolbarItem = pluginDef[2];
-
-            // Check if already selected
+        for (PremiumEntry entry : PluginCatalogue.PREMIUM) {
             boolean alreadySelected = state.getPremiumPlugins().stream()
-                .anyMatch(p -> p.getName().equals(name));
-
+                .anyMatch(p -> p.getName().equals(entry.name()));
             if (!alreadySelected) {
-                CustomPluginConfig config = CustomPluginConfig.fromPremium(name);
-                if (toolbarItem != null && !toolbarItem.isEmpty()) {
-                    config.setToolbarItems(List.of(toolbarItem));
-                }
-                state.addPremiumPlugin(config);
+                state.addPremiumPlugin(toPremiumConfig(entry));
             }
         }
 
@@ -282,7 +281,15 @@ public class AdvancedConfigStep implements WizardStep {
     /**
      * Create Premium plugin card, style consistent with PluginsStep plugin cards
      */
-    private Div createPremiumPluginCard(String name, String description, String toolbarItem) {
+    private static CustomPluginConfig toPremiumConfig(PremiumEntry entry) {
+        CustomPluginConfig config = CustomPluginConfig.fromPremium(entry.name());
+        config.setToolbarItems(new ArrayList<>(entry.toolbarItems()));
+        return config;
+    }
+
+    private Div createPremiumPluginCard(PremiumEntry entry) {
+        String name = entry.name();
+        String description = I18nUtil.get(entry.descriptionKey());
         Div card = new Div();
         card.addClassName("plugin-card");
         card.getElement().setAttribute("data-plugin", name);
@@ -317,11 +324,7 @@ public class AdvancedConfigStep implements WizardStep {
                     card.removeClassName("selected");
                 } else {
                     // Select
-                    CustomPluginConfig config = CustomPluginConfig.fromPremium(name);
-                    if (toolbarItem != null && !toolbarItem.isEmpty()) {
-                        config.setToolbarItems(List.of(toolbarItem));
-                    }
-                    state.addPremiumPlugin(config);
+                    state.addPremiumPlugin(toPremiumConfig(entry));
                     card.addClassName("selected");
                 }
             }
@@ -400,9 +403,196 @@ public class AdvancedConfigStep implements WizardStep {
         linkRow.add(linkDefaultProtocolField, addTargetToExternalLinksCheckbox);
 
         section.add(placeholderField, fontSizesField, allowAnyFontSizeCheckbox,
-                   fontFamiliesField, linkRow);
+                   fontFamiliesField, linkRow, createCodeHighlightingRow());
 
         return section;
+    }
+
+    /** 代码块语法高亮（addon 6.2 setCodeBlockHighlighting / setCodeBlockHighlightTheme），需要 CodeBlock 插件。 */
+    private HorizontalLayout createCodeHighlightingRow() {
+        HorizontalLayout row = new HorizontalLayout();
+        row.setWidthFull();
+        row.setAlignItems(FlexComponent.Alignment.BASELINE);
+
+        codeHighlightThemeComboBox = new ComboBox<>(I18nUtil.get("step6.codeHighlightTheme"));
+        codeHighlightThemeComboBox.setItems(CodeHighlightTheme.values());
+        codeHighlightThemeComboBox.setItemLabelGenerator(t -> I18nUtil.get("enum.codeHighlightTheme." + t.name()));
+        codeHighlightThemeComboBox.setValue(CodeHighlightTheme.AUTO);
+        codeHighlightThemeComboBox.setEnabled(false);
+        codeHighlightThemeComboBox.addValueChangeListener(e -> {
+            if (state != null && e.getValue() != null) {
+                state.setCodeHighlightTheme(e.getValue());
+            }
+        });
+
+        codeHighlightingCheckbox = new Checkbox(I18nUtil.get("step6.codeHighlighting"));
+        codeHighlightingCheckbox.setTooltipText(I18nUtil.get("step6.codeHighlighting.helper"));
+        codeHighlightingCheckbox.addValueChangeListener(e -> {
+            if (state != null) {
+                state.setCodeBlockHighlighting(e.getValue());
+                codeHighlightThemeComboBox.setEnabled(e.getValue());
+            }
+        });
+
+        row.add(codeHighlightingCheckbox, codeHighlightThemeComboBox);
+        return row;
+    }
+
+    /** 字数统计与上限（addon 6.2 setWordCountVisible / setMaxWords / setMaxCharacters），超限时字段标为无效。 */
+    private HorizontalLayout createWordCountRow() {
+        HorizontalLayout row = new HorizontalLayout();
+        row.setWidthFull();
+        row.setAlignItems(FlexComponent.Alignment.BASELINE);
+
+        wordCountVisibleCheckbox = new Checkbox(I18nUtil.get("step6.wordCountVisible"));
+        wordCountVisibleCheckbox.addValueChangeListener(e -> {
+            if (state != null) {
+                state.setWordCountVisible(e.getValue());
+            }
+        });
+
+        maxWordsField = createLimitField("step6.maxWords");
+        maxWordsField.addValueChangeListener(e -> {
+            if (state != null) {
+                state.setMaxWords(e.getValue() != null ? e.getValue() : 0);
+            }
+        });
+
+        maxCharactersField = createLimitField("step6.maxCharacters");
+        maxCharactersField.addValueChangeListener(e -> {
+            if (state != null) {
+                state.setMaxCharacters(e.getValue() != null ? e.getValue() : 0);
+            }
+        });
+
+        row.add(wordCountVisibleCheckbox, maxWordsField, maxCharactersField);
+        return row;
+    }
+
+    private static IntegerField createLimitField(String labelKey) {
+        IntegerField field = new IntegerField(I18nUtil.get(labelKey));
+        field.setMin(0);
+        field.setStep(10);
+        field.setStepButtonsVisible(true);
+        field.setPlaceholder("0");
+        field.setHelperText(I18nUtil.get("step6.limit.helper"));
+        return field;
+    }
+
+    /**
+     * GHS 允许的元素：留空即 HtmlSupport.allowAll()（addon 6.2 起不含 script / iframe / on* 属性）。
+     * 只在勾选 GHS 时可编辑，元素名按 addon 的 HtmlSupport.Rule 规则校验。
+     */
+    private TextField createHtmlSupportElementsField() {
+        TextField field = new TextField(I18nUtil.get("step6.htmlSupportElements"));
+        field.setWidthFull();
+        field.setPlaceholder("div,section,span");
+        field.setHelperText(I18nUtil.get("step6.htmlSupportElements.helper"));
+        field.setEnabled(false);
+        field.addValueChangeListener(e -> {
+            if (state == null) return;
+            List<String> elements = splitList(e.getValue());
+            // 非法元素名不写入 state，由 validate() 阻止进入下一步
+            boolean valid = areValidElementNames(elements);
+            setInvalid(field, !valid, "step6.htmlSupportElements.invalid");
+            if (valid) {
+                state.setHtmlSupportAllowedElements(elements);
+            }
+        });
+        return field;
+    }
+
+    private static boolean areValidElementNames(List<String> elements) {
+        try {
+            elements.forEach(HtmlSupport.Rule::element);
+            return true;
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
+    }
+
+    /** 空串视为「未填写」（CUSTOM 时由 validate() 报错），其余交给 addon 的 FullscreenPage.custom 校验。 */
+    private static boolean isValidCustomWidth(String width) {
+        if (width.isEmpty()) {
+            return true;
+        }
+        try {
+            FullscreenPage.custom(width);
+            return true;
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
+    }
+
+    private static void setInvalid(TextField field, boolean invalid, String messageKey) {
+        if (invalid) {
+            field.setErrorMessage(I18nUtil.get(messageKey));
+        }
+        field.setInvalid(invalid);
+    }
+
+    private static List<String> splitList(String value) {
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(value.split(",")).map(String::trim).filter(v -> !v.isEmpty()).toList();
+    }
+
+    /**
+     * 全屏页面宽度（addon 6.2 FullscreenPage，默认 A4_FIT）。CKEditor 全屏只支持 CLASSIC / DECOUPLED，
+     * 其它类型禁用此项。
+     */
+    private HorizontalLayout createFullscreenPageRow() {
+        HorizontalLayout row = new HorizontalLayout();
+        row.setWidthFull();
+        row.setAlignItems(FlexComponent.Alignment.BASELINE);
+
+        fullscreenCustomWidthField = new TextField(I18nUtil.get("step6.fullscreenCustomWidth"));
+        fullscreenCustomWidthField.setPlaceholder("1200px, 80%, min(1400px, 90%)");
+        fullscreenCustomWidthField.setVisible(false);
+        fullscreenCustomWidthField.addValueChangeListener(e -> {
+            if (state == null) return;
+            String width = e.getValue() == null ? "" : e.getValue().trim();
+            // 非法值不写入 state（state 中只保存 FullscreenPage.custom 接受的宽度），由 validate() 阻止进入下一步
+            boolean valid = isValidCustomWidth(width);
+            setInvalid(fullscreenCustomWidthField, !valid, "step6.fullscreenCustomWidth.invalid");
+            if (valid) {
+                state.setFullscreenCustomWidth(width);
+            }
+        });
+
+        fullscreenPageComboBox = new ComboBox<>(I18nUtil.get("step6.fullscreenPage"));
+        fullscreenPageComboBox.setItems(FullscreenPageMode.values());
+        fullscreenPageComboBox.setItemLabelGenerator(FullscreenPageMode::getDisplayName);
+        fullscreenPageComboBox.setValue(FullscreenPageMode.A4_FIT);
+        fullscreenPageComboBox.setWidth("260px");
+        fullscreenPageComboBox.addValueChangeListener(e -> {
+            if (state != null && e.getValue() != null) {
+                state.setFullscreenPageMode(e.getValue());
+                boolean custom = e.getValue() == FullscreenPageMode.CUSTOM;
+                fullscreenCustomWidthField.setVisible(custom);
+                fullscreenCustomWidthField.setRequired(custom);
+            }
+        });
+
+        row.add(fullscreenPageComboBox, fullscreenCustomWidthField);
+        return row;
+    }
+
+    /** 全屏页面选项只在编辑器类型支持全屏时可用，并提示需要 Fullscreen 插件。 */
+    private void updateFullscreenAvailability() {
+        boolean supported = state.supportsFullscreen();
+        fullscreenPageComboBox.setEnabled(supported);
+        fullscreenCustomWidthField.setEnabled(supported);
+        if (!supported) {
+            fullscreenPageComboBox.setHelperText(I18nUtil.get("step6.fullscreenPage.unsupported"));
+        } else if (!state.hasPlugin(CKEditorPlugin.FULLSCREEN)) {
+            fullscreenPageComboBox.setHelperText(I18nUtil.get("step6.fullscreenPage.needsPlugin"));
+        } else {
+            fullscreenPageComboBox.setHelperText(I18nUtil.get("step6.fullscreenPage.helper"));
+        }
+        codeHighlightingCheckbox.setHelperText(state.hasPlugin(CKEditorPlugin.CODE_BLOCK)
+            ? null : I18nUtil.get("step6.codeHighlighting.needsPlugin"));
     }
 
     private VerticalLayout createUploadSection() {
@@ -522,11 +712,14 @@ public class AdvancedConfigStep implements WizardStep {
         featuresRow.setWidthFull();
 
         ghsEnabledCheckbox = new Checkbox(I18nUtil.get("step6.ghs"));
+        ghsEnabledCheckbox.setTooltipText(I18nUtil.get("step6.ghs.helper"));
         ghsEnabledCheckbox.addValueChangeListener(e -> {
             if (state != null) {
                 state.setGhsEnabled(e.getValue());
+                htmlSupportElementsField.setEnabled(e.getValue());
             }
         });
+        htmlSupportElementsField = createHtmlSupportElementsField();
 
         minimapEnabledCheckbox = new Checkbox(I18nUtil.get("step6.minimap"));
         minimapEnabledCheckbox.addValueChangeListener(e -> {
@@ -573,7 +766,7 @@ public class AdvancedConfigStep implements WizardStep {
             }
         });
 
-        section.add(autosaveRow, readOnlyRow, featuresRow,
+        section.add(autosaveRow, readOnlyRow, featuresRow, htmlSupportElementsField, createWordCountRow(),
                    fallbackModeComboBox, sanitizationPolicyComboBox, dependencyModeComboBox);
 
         return section;
@@ -620,7 +813,7 @@ public class AdvancedConfigStep implements WizardStep {
             }
         });
 
-        section.add(sizeRow, initialValueField);
+        section.add(sizeRow, createFullscreenPageRow(), initialValueField);
 
         return section;
     }
@@ -661,10 +854,25 @@ public class AdvancedConfigStep implements WizardStep {
         viewOnlyCheckbox.setValue(state.isViewOnly());
         readOnlyCheckbox.setEnabled(!state.isViewOnly());
         ghsEnabledCheckbox.setValue(state.isGhsEnabled());
+        htmlSupportElementsField.setValue(String.join(",", state.getHtmlSupportAllowedElements()));
+        htmlSupportElementsField.setEnabled(state.isGhsEnabled());
+        wordCountVisibleCheckbox.setValue(state.isWordCountVisible());
+        maxWordsField.setValue(state.getMaxWords() > 0 ? state.getMaxWords() : null);
+        maxCharactersField.setValue(state.getMaxCharacters() > 0 ? state.getMaxCharacters() : null);
         minimapEnabledCheckbox.setValue(state.isMinimapEnabled());
         fallbackModeComboBox.setValue(state.getFallbackMode());
         sanitizationPolicyComboBox.setValue(state.getSanitizationPolicy());
         dependencyModeComboBox.setValue(state.getDependencyMode());
+
+        // Code highlighting / fullscreen (addon 6.2)
+        codeHighlightingCheckbox.setValue(state.isCodeBlockHighlighting());
+        codeHighlightThemeComboBox.setValue(state.getCodeHighlightTheme());
+        codeHighlightThemeComboBox.setEnabled(state.isCodeBlockHighlighting());
+        fullscreenPageComboBox.setValue(state.getFullscreenPageMode());
+        fullscreenCustomWidthField.setValue(state.getFullscreenCustomWidth());
+        fullscreenCustomWidthField.setVisible(state.getFullscreenPageMode() == FullscreenPageMode.CUSTOM);
+        fullscreenCustomWidthField.setRequired(state.getFullscreenPageMode() == FullscreenPageMode.CUSTOM);
+        updateFullscreenAvailability();
 
         // Size
         editorWidthField.setValue(state.getEditorWidth());
@@ -694,6 +902,17 @@ public class AdvancedConfigStep implements WizardStep {
 
     @Override
     public ValidationResult validate(BuilderState state) {
+        // 新选项的输入未通过校验时阻止前进（错误优先于下面的警告），避免导出与表单显示不一致
+        if (state.isGhsEnabled() && htmlSupportElementsField != null && htmlSupportElementsField.isInvalid()) {
+            return ValidationResult.error(I18nUtil.get("step6.htmlSupportElements.invalid"));
+        }
+        if (state.getFullscreenPageMode() == FullscreenPageMode.CUSTOM && state.supportsFullscreen()
+                && state.hasPlugin(CKEditorPlugin.FULLSCREEN)
+                && (state.getFullscreenCustomWidth().isEmpty()
+                    || (fullscreenCustomWidthField != null && fullscreenCustomWidthField.isInvalid()))) {
+            return ValidationResult.error(I18nUtil.get("step6.fullscreenCustomWidth.invalid"));
+        }
+
         // Check upload URL format
         String uploadUrl = state.getSimpleUploadUrl();
         if (uploadUrl != null && !uploadUrl.isEmpty()) {
@@ -705,6 +924,11 @@ public class AdvancedConfigStep implements WizardStep {
         // Check if Minimap is used in Decoupled mode
         if (state.isMinimapEnabled() && state.getEditorType() != com.wontlost.ckeditor.CKEditorType.DECOUPLED) {
             return ValidationResult.warning(I18nUtil.get("validation.minimapDecoupled"));
+        }
+
+        // 代码块高亮需要 CodeBlock 插件，否则 addon 不会有可高亮的内容
+        if (state.isCodeBlockHighlighting() && !state.hasPlugin(CKEditorPlugin.CODE_BLOCK)) {
+            return ValidationResult.warning(I18nUtil.get("step6.codeHighlighting.needsPlugin"));
         }
 
         return ValidationResult.ok();

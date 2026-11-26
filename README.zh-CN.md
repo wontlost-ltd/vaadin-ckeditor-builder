@@ -26,7 +26,7 @@
 | Java | 21 |
 | Vaadin | 25.3.5 |
 | Spring Boot | 4.1.1 |
-| ckeditor-vaadin | 6.0.0 |
+| ckeditor-vaadin | 6.2.0 |
 | CKEditor 5 | 49.1.0 |
 
 ## 快速开始

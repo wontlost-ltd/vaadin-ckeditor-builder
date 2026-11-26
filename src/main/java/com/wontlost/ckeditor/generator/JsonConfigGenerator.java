@@ -61,8 +61,31 @@ public class JsonConfigGenerator implements CodeGenerator {
         sb.append("    \"theme\": \"").append(state.getTheme().name()).append("\",\n");
         sb.append("    \"language\": \"").append(escapeJson(state.getLanguage())).append("\",\n");
         sb.append("    \"mode\": \"").append(state.getMode().name()).append("\",\n");
-        sb.append("    \"autoGenerateToolbar\": ").append(state.isAutoGenerateToolbar()).append("\n");
+        sb.append("    \"autoGenerateToolbar\": ").append(state.isAutoGenerateToolbar()).append(",\n");
+        // ckeditor-vaadin 6.2 选项
+        sb.append("    \"fullscreenPage\": ").append(fullscreenPageJson(state)).append(",\n");
+        sb.append("    \"wordCount\": { \"visible\": ").append(state.isWordCountVisible())
+          .append(", \"maxWords\": ").append(state.getMaxWords())
+          .append(", \"maxCharacters\": ").append(state.getMaxCharacters()).append(" },\n");
+        sb.append("    \"codeBlockHighlighting\": ")
+          .append(state.usesCodeBlockHighlighting()
+              ? "\"" + state.getCodeHighlightTheme().getJsName() + "\"" : "null").append(",\n");
+        sb.append("    \"htmlSupport\": ")
+          .append(state.isGhsEnabled() ? state.toHtmlSupport().toJson().toString() : "null").append("\n");
         sb.append("  },\n");
+    }
+
+    /** 全屏页面：编辑器类型不支持全屏（BALLOON / INLINE）时为 null。 */
+    private String fullscreenPageJson(BuilderState state) {
+        if (!state.supportsFullscreen()) {
+            return "null";
+        }
+        var page = state.toFullscreenPage();
+        String json = "{ \"mode\": \"" + page.getMode() + "\"";
+        if (page.getCssWidth() != null) {
+            json += ", \"width\": \"" + escapeJson(page.getCssWidth()) + "\"";
+        }
+        return json + " }";
     }
 
     private void generatePlugins(StringBuilder sb, BuilderState state) {
@@ -84,19 +107,10 @@ public class JsonConfigGenerator implements CodeGenerator {
         sb.append("  \"toolbar\": {\n");
         sb.append("    \"items\": [\n");
 
-        List<String> toolbarItems;
-        if (!state.getToolbarItems().isEmpty()) {
-            toolbarItems = state.getToolbarItems().stream()
-                .map(t -> "      \"" + escapeJson(t) + "\"")
-                .collect(Collectors.toList());
-        } else {
-            // Generate default toolbar based on plugins
-            toolbarItems = state.getSelectedPlugins().stream()
-                .flatMap(p -> p.getToolbarItems().stream())
-                .distinct()
-                .map(t -> "      \"" + escapeJson(t) + "\"")
-                .collect(Collectors.toList());
-        }
+        // 未自定义时由插件推导；BALLOON / INLINE 去掉 fullscreen
+        List<String> toolbarItems = state.getEffectiveToolbarItemsOrDerived().stream()
+            .map(t -> "      \"" + escapeJson(t) + "\"")
+            .collect(Collectors.toList());
         sb.append(String.join(",\n", toolbarItems));
 
         sb.append("\n    ],\n");
