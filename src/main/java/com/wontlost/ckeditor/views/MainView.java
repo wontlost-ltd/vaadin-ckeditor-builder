@@ -49,6 +49,20 @@ public class MainView extends AppLayout {
         createHeader();
     }
 
+    /** 页头版本标签：文字取自构建版本（AppVersion），不写死 */
+    static Span createVersionBadge() {
+        Span version = new Span(AppVersion.badge());
+        version.addClassName("version-badge");
+        version.getStyle()
+            .set("font-size", "11px")
+            .set("color", "var(--app-text-muted, #6b7280)")
+            .set("background", "var(--app-bg-tertiary, #f3f4f6)")
+            .set("padding", "2px 8px")
+            .set("border-radius", "4px")
+            .set("font-weight", "500");
+        return version;
+    }
+
     private void createHeader() {
         // Logo 图标
         Icon logo = VaadinIcon.EDIT.create();
@@ -66,15 +80,7 @@ public class MainView extends AppLayout {
             .set("white-space", "nowrap");
 
         // 版本标签
-        Span version = new Span(AppVersion.badge());
-        version.addClassName("version-badge");
-        version.getStyle()
-            .set("font-size", "11px")
-            .set("color", "var(--app-text-muted, #6b7280)")
-            .set("background", "var(--app-bg-tertiary, #f3f4f6)")
-            .set("padding", "2px 8px")
-            .set("border-radius", "4px")
-            .set("font-weight", "500");
+        Span version = createVersionBadge();
 
         // 左侧品牌区
         HorizontalLayout brandSection = new HorizontalLayout(logo, appName, version);

@@ -97,6 +97,8 @@ tasks.named('test') {
     useJUnitPlatform {
         excludeTags 'local'
     }
+    // AppVersionTest 用它核对 buildInfo 读到的版本
+    systemProperty 'project.version', project.version.toString()
 }
 
 // 本地集成测试（连接真实 H2 文件 DB + ckeditorlocal Oracle）

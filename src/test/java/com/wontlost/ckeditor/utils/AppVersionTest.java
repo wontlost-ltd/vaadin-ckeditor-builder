@@ -3,12 +3,6 @@ package com.wontlost.ckeditor.utils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -36,11 +30,16 @@ class AppVersionTest {
 
     @Test
     @DisplayName("运行时版本与 build.gradle 的 version 一致（buildInfo 已生成并被读取）")
-    void versionMatchesBuildGradle() throws IOException {
-        String gradle = Files.readString(Path.of("build.gradle"));
-        Matcher m = Pattern.compile("(?m)^version\\s*=\\s*['\"]([^'\"]+)['\"]").matcher(gradle);
-        assertTrue(m.find(), "build.gradle 中找不到 version");
-        assertEquals(m.group(1), AppVersion.version());
-        assertEquals(AppVersion.badgeFor(m.group(1)), AppVersion.badge());
+    void versionMatchesBuildGradle() {
+        String expected = System.getProperty("project.version");
+        assertNotNull(expected, "Gradle test 任务应传入 project.version");
+        assertEquals(expected, AppVersion.version());
+        assertEquals(AppVersion.badgeFor(expected), AppVersion.badge());
+    }
+
+    @Test
+    @DisplayName("非数字版本按约定原样显示（如分支构建 main → vmain），不回退成 dev")
+    void nonNumericVersionShownAsIs() {
+        assertEquals("vnightly", AppVersion.badgeFor("nightly"));
     }
 }
