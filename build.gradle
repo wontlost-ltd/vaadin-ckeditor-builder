@@ -21,6 +21,14 @@ repositories {
     maven { url = uri('https://maven.vaadin.com/vaadin-prereleases') }
 }
 
+// 把 version 写进 META-INF/build-info.properties，页面版本标签由它得出（AppVersion），发版只需改上面的 version
+springBoot {
+    buildInfo {
+        // 不写构建时间，同一源码构建出的镜像保持可复现
+        excludes = ['time']
+    }
+}
+
 ext {
     vaadinVersion = '25.3.5'
 }
@@ -89,6 +97,8 @@ tasks.named('test') {
     useJUnitPlatform {
         excludeTags 'local'
     }
+    // AppVersionTest 用它核对 buildInfo 读到的版本
+    systemProperty 'project.version', project.version.toString()
 }
 
 // 本地集成测试（连接真实 H2 文件 DB + ckeditorlocal Oracle）
